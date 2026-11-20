@@ -35,12 +35,7 @@ function storeFrom(profile: CreatorProfile, g: Pick<StoreGen, "displayName" | "b
   };
 }
 
-const IG_MSG: Record<string, string> = {
-  invalid: "That doesn't look like an Instagram handle. Handles use letters, numbers, dots and underscores.",
-  not_found: "We couldn't find that Instagram account. Check the spelling, or describe yourself below.",
-  private: "That account is private, so we can't read it. Describe yourself below instead.",
-  blocked: "Instagram didn't let us read this profile right now (it often blocks automated reads). No problem: paste your Instagram bio or describe what you post below.",
-};
+const INVALID_HANDLE = "doesn't look like an Instagram handle. Handles use letters, numbers, dots and underscores.";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -306,7 +301,7 @@ export default function CreatePage() {
                   )}
                 </div>
               ))}
-              {badHandle && <p className="text-xs text-red-600">&quot;{badHandle}&quot; {IG_MSG.invalid.replace("That", "").trim()}</p>}
+              {badHandle && <p className="text-xs text-red-600">&quot;{badHandle}&quot; {INVALID_HANDLE}</p>}
               <div className="flex justify-between text-sm">
                 {profile.handles.length < 3 ? (
                   <button className="font-medium text-blue-700" onClick={() => p({ handles: [...profile.handles, ""] })}>
@@ -334,18 +329,27 @@ export default function CreatePage() {
               {ig.status === "checking" && (
                 <Notice tone="info">
                   <span className="flex items-center gap-2">
-                    <Spinner /> Reading @{handles[0]}…
+                    <Spinner /> Looking up @{normaliseHandle(handles[0]) ?? handles[0]}…
                   </span>
                 </Notice>
               )}
               {ig.status === "found" && profile.igSignals && (
                 <Notice tone="ok">
-                  ✓ Found <b>@{profile.igSignals.handle}</b>
+                  📸 <b>@{profile.igSignals.handle}</b>
                   {profile.igSignals.followers != null && <> · {profile.igSignals.followers.toLocaleString("en-IN")} followers</>}
                   {profile.igSignals.bio && <span className="mt-1 block text-emerald-800">&quot;{profile.igSignals.bio}&quot;</span>}
                 </Notice>
               )}
-              {ig.status === "failed" && <Notice tone="warn">{IG_MSG[ig.reason ?? "blocked"]}</Notice>}
+              {ig.status === "failed" && handles.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {handles.map((h) => (
+                    <span key={h} className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-800">
+                      📸 @{normaliseHandle(h) ?? h}
+                    </span>
+                  ))}
+                  <span className="self-center text-xs text-neutral-500">Linked on your store</span>
+                </div>
+              )}
             </div>
             <div className="mt-6 space-y-5">
               <Field
@@ -389,29 +393,21 @@ export default function CreatePage() {
 }
 
 function Generating({ profile }: { profile: CreatorProfile }) {
-  const lines = [
-    profile.igSignals ? `Reading @${profile.igSignals.handle}'s profile` : "Understanding your niche",
-    "Writing your bio",
-    "Finding products your followers will buy",
-    "Pricing them for Indian buyers",
-  ];
-  const [i, setI] = useState(0);
+  const [secs, setSecs] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setI((x) => Math.min(lines.length - 1, x + 1)), 2500);
+    const t = setInterval(() => setSecs((x) => x + 1), 1000);
     return () => clearInterval(t);
-  }, [lines.length]);
+  }, []);
   return (
     <div className="py-10 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-2xl">✨</div>
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-2xl">
+        <Spinner className="text-violet-700" />
+      </div>
       <h1 className="mt-5 text-2xl font-bold">Building your store…</h1>
-      <ul className="mx-auto mt-6 max-w-xs space-y-2 text-left text-sm">
-        {lines.map((l, j) => (
-          <li key={l} className={`flex items-center gap-2 ${j <= i ? "text-neutral-900" : "text-neutral-400"}`}>
-            {j < i ? "✓" : j === i ? <Spinner /> : "○"} {l}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-6 text-xs text-neutral-500">Usually takes 10–20 seconds.</p>
+      <p className="mx-auto mt-3 max-w-sm text-neutral-600">
+        AI is writing your bio and 3 product ideas{profile.category && profile.category !== "Other" ? ` for ${profile.category.toLowerCase()}` : ""}, with prices that suit Indian buyers.
+      </p>
+      <p className="mt-6 text-xs text-neutral-500">{secs < 15 ? "Usually takes 5–15 seconds." : "Taking a little longer than usual. Hang on…"}</p>
     </div>
   );
 }

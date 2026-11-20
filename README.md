@@ -20,7 +20,7 @@ Built for the SuperProfile Product Manager assignment ("AI Storefront Generator"
 | Handle doesn't exist, is private, or Instagram blocks the read | Friendly message; the description becomes required |
 | Malformed handle or full URL pasted | URL is parsed; invalid characters are flagged inline |
 | Gibberish or one-word description | The model flags `too_vague` and asks one clarifying question; the creator can answer it or choose "Generate anyway" |
-| LLM slow, failing, rate-limited or misconfigured | 45-second timeout with 1 retry; a rate limit gets its own "try again in a minute" message. The error screen keeps the inputs and offers "Try again"; after 2 failures it also offers an editable starter template, clearly labelled |
+| LLM busy, slow, rate-limited or misconfigured | Falls through a chain of Gemini models (18-second timeout each, about 50 seconds in total); a rate limit gets its own "try again in a minute" message. The error screen keeps the inputs and offers "Try again"; after 2 failures it also offers an editable starter template, clearly labelled |
 | Safety block | Friendly message asking the creator to rephrase |
 | Refresh mid-flow | Draft is saved in localStorage and restored |
 | Oversized images | Resized in the browser; the store payload is capped at about 900 KB |
@@ -28,7 +28,7 @@ Built for the SuperProfile Product Manager assignment ("AI Storefront Generator"
 
 ## Stack
 
-Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Gemini API (`gemini-3.8-flash` on the free tier, JSON output constrained by a Zod schema and validated, low thinking level for speed) · Upstash Redis · Vercel.
+Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Gemini API free tier (a fallback chain starting with `gemini-3.5-flash-lite`, because free-tier models are often busy; JSON output constrained by a Zod schema and validated; low thinking level for speed) · Upstash Redis · Vercel.
 
 Key files:
 - `src/lib/ai.ts`: prompts, schemas and Gemini calls

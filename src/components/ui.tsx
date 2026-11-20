@@ -19,7 +19,7 @@ export function Button({
     <button
       {...rest}
       disabled={rest.disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${styles} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${styles} ${className}`}
     >
       {loading && <Spinner />}
       {children}
@@ -60,8 +60,8 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "
 export function StepFooter({ step, total, children }: { step: number; total: number; children: ReactNode }) {
   return (
     <div className="mt-8 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <span className="relative h-2 w-14 overflow-hidden rounded-full bg-neutral-200">
+      <div className="flex items-center gap-2 whitespace-nowrap text-sm text-neutral-500">
+        <span className="relative h-2 w-14 shrink-0 overflow-hidden rounded-full bg-neutral-200">
           <span className="absolute inset-y-0 left-0 rounded-full bg-emerald-500" style={{ width: `${(step / total) * 100}%` }} />
         </span>
         Step {step} of {total}

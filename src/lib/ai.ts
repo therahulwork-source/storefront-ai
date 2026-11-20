@@ -4,15 +4,24 @@ import { nanoid } from "nanoid";
 import { bandsForPrompt, guardPrice, tierFor } from "./pricing";
 import { BIO_MAX, type CreatorProfile, type Product, type ProductType } from "./types";
 
-// Free-tier friendly default; override with GEMINI_MODEL if Google renames models.
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+// Free-tier models are often overloaded (503/504) or rate-limited (429), so we try a
+// chain of models, fast "lite" models first. GEMINI_MODEL (optional) goes first.
+const MODELS = [
+  ...(process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : []),
+  "gemini-3.5-flash-lite", // fastest and least congested on the free tier
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.8-flash",
+].filter((m, i, a) => a.indexOf(m) === i);
+const TOTAL_BUDGET_MS = 50_000; // stay under Vercel's 60s function limit
 
 // Reads the key from the environment. Never hard-code it.
 let ai: GoogleGenAI | null = null;
 const client = () =>
   (ai ??= new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
-    httpOptions: { timeout: 45_000, retryOptions: { attempts: 2 } },
+    httpOptions: { timeout: 18_000, retryOptions: { attempts: 1 } },
   }));
 
 export class AiError extends Error {
@@ -76,6 +85,11 @@ function creatorContext(p: CreatorProfile) {
     lines.push("Instagram data: not available (treat audience as small, under 10K).");
   }
   lines.push(`Typical price bands for this audience size: ${bandsForPrompt(tier)}.`);
+  lines.push(
+    p.language === "hinglish"
+      ? "LANGUAGE: Write the bio, titles, descriptions, price_rationale and cta_label in Roman-script Hinglish (Hindi + English mix, like Instagram captions). Not pure English. Avoid gendered Hindi verb forms about the creator (e.g. write \"main help karta/karti hoon\" as \"main help karti hoon\" only if the creator's gender is stated; otherwise rephrase)."
+      : "LANGUAGE: Simple Indian English.",
+  );
   return { text: lines.join("\n"), tier };
 }
 
@@ -83,29 +97,53 @@ async function callModel<T extends z.ZodType>(schema: T, user: string, maxTokens
   const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
   delete jsonSchema.$schema;
   let text: string | undefined;
-  try {
-    const res = await client().models.generateContent({
-      model: MODEL,
-      contents: user,
-      config: {
-        systemInstruction: SYSTEM,
-        responseMimeType: "application/json",
-        responseJsonSchema: jsonSchema,
-        maxOutputTokens: maxTokens,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      },
-    });
-    const reason = res.candidates?.[0]?.finishReason;
-    if (reason === "SAFETY" || reason === "RECITATION" || res.promptFeedback?.blockReason) {
-      throw new AiError("safety", `Blocked (${reason ?? res.promptFeedback?.blockReason})`);
+  const started = Date.now();
+  const tried: string[] = [];
+  let lastErr: AiError | null = null;
+  for (const model of MODELS) {
+    if (Date.now() - started > TOTAL_BUDGET_MS - 10_000) break;
+    try {
+      const res = await client().models.generateContent({
+        model,
+        contents: user,
+        config: {
+          systemInstruction: SYSTEM,
+          responseMimeType: "application/json",
+          responseJsonSchema: jsonSchema,
+          maxOutputTokens: maxTokens,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        },
+      });
+      const reason = res.candidates?.[0]?.finishReason;
+      if (reason === "SAFETY" || reason === "RECITATION" || res.promptFeedback?.blockReason) {
+        throw new AiError("safety", `Blocked (${reason ?? res.promptFeedback?.blockReason})`);
+      }
+      text = res.text;
+      console.info(`[ai] answered by ${model} in ${Date.now() - started}ms`);
+      if (tried.length) console.info(`[ai] ${model} answered after: ${tried.join(", ")}`);
+      break;
+    } catch (e) {
+      if (e instanceof AiError) throw e;
+      const status = e instanceof ApiError ? e.status : 0;
+      tried.push(`${model}:${status || "net"}`);
+      lastErr = new AiError(status === 429 ? "rate_limit" : "upstream", `Gemini ${model} ${status}: ${(e as Error).message}`.slice(0, 300));
+      // busy, rate-limited, unknown model or timeout -> try the next model
+      if ([0, 404, 408, 429, 500, 503, 504].includes(status) || status >= 500) continue;
+      throw lastErr; // e.g. 400 bad request or 401/403 bad key: switching models won't help
     }
-    text = res.text;
-  } catch (e) {
-    if (e instanceof AiError) throw e;
-    if (e instanceof ApiError) {
-      throw new AiError(e.status === 429 ? "rate_limit" : "upstream", `Gemini API error ${e.status}: ${e.message}`.slice(0, 300));
+  }
+  if (text === undefined) {
+    console.error(`[ai] all models failed: ${tried.join(", ")}`);
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        const names: string[] = [];
+        for await (const m of await client().models.list()) {
+          if (m.name && m.supportedActions?.includes("generateContent")) names.push(m.name.replace("models/", ""));
+        }
+        console.error(`[ai] models this key can use: ${names.join(", ")}`);
+      } catch {}
     }
-    throw new AiError("upstream", (e as Error).message ?? "Network error");
+    throw lastErr ?? new AiError("upstream", "No model available");
   }
   if (!text) throw new AiError("bad_output", "Empty response");
   try {
