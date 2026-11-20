@@ -1,17 +1,22 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import * as z from "zod/v4";
+import { ApiError, GoogleGenAI, ThinkingLevel } from "@google/genai";
+import * as z from "zod";
 import { nanoid } from "nanoid";
 import { bandsForPrompt, guardPrice, tierFor } from "./pricing";
 import { BIO_MAX, type CreatorProfile, type Product, type ProductType } from "./types";
 
-const MODEL = "claude-opus-5-5";
+// Free-tier friendly default; override with GEMINI_MODEL if Google renames models.
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
-// Reads ANTHROPIC_API_KEY from the environment. Never hard-code the key.
-const client = new Anthropic({ timeout: 45_000, maxRetries: 1 });
+// Reads the key from the environment. Never hard-code it.
+let ai: GoogleGenAI | null = null;
+const client = () =>
+  (ai ??= new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+    httpOptions: { timeout: 45_000, retryOptions: { attempts: 2 } },
+  }));
 
 export class AiError extends Error {
-  constructor(public code: "refusal" | "bad_output" | "upstream", message: string) {
+  constructor(public code: "safety" | "bad_output" | "rate_limit" | "upstream", message: string) {
     super(message);
   }
 }
@@ -74,28 +79,40 @@ function creatorContext(p: CreatorProfile) {
   return { text: lines.join("\n"), tier };
 }
 
-async function callClaude<T extends z.ZodType>(schema: T, user: string, maxTokens = 4000): Promise<z.infer<T>> {
-  let res;
+async function callModel<T extends z.ZodType>(schema: T, user: string, maxTokens = 4000): Promise<z.infer<T>> {
+  const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
+  delete jsonSchema.$schema;
+  let text: string | undefined;
   try {
-    res = await client.beta.messages.parse({
+    const res = await client().models.generateContent({
       model: MODEL,
-      max_tokens: maxTokens,
-      system: SYSTEM,
-      messages: [{ role: "user", content: user }],
-      output_config: { effort: "low", format: betaZodOutputFormat(schema) },
-      // If a safety classifier declines, retry on a suitable fallback model server-side.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      contents: user,
+      config: {
+        systemInstruction: SYSTEM,
+        responseMimeType: "application/json",
+        responseJsonSchema: jsonSchema,
+        maxOutputTokens: maxTokens,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+      },
     });
+    const reason = res.candidates?.[0]?.finishReason;
+    if (reason === "SAFETY" || reason === "RECITATION" || res.promptFeedback?.blockReason) {
+      throw new AiError("safety", `Blocked (${reason ?? res.promptFeedback?.blockReason})`);
+    }
+    text = res.text;
   } catch (e) {
-    if (e instanceof Anthropic.APIError) {
-      throw new AiError("upstream", `Claude API error ${e.status ?? ""}: ${e.message}`.slice(0, 300));
+    if (e instanceof AiError) throw e;
+    if (e instanceof ApiError) {
+      throw new AiError(e.status === 429 ? "rate_limit" : "upstream", `Gemini API error ${e.status}: ${e.message}`.slice(0, 300));
     }
     throw new AiError("upstream", (e as Error).message ?? "Network error");
   }
-  if (res.stop_reason === "refusal") throw new AiError("refusal", "The AI declined this request.");
-  if (!res.parsed_output) throw new AiError("bad_output", `Unparseable output (stop: ${res.stop_reason})`);
-  return res.parsed_output as z.infer<T>;
+  if (!text) throw new AiError("bad_output", "Empty response");
+  try {
+    return schema.parse(JSON.parse(text)) as z.infer<T>;
+  } catch {
+    throw new AiError("bad_output", `Unparseable output: ${text.slice(0, 200)}`);
+  }
 }
 
 function toProduct(a: AiProduct, tier: ReturnType<typeof tierFor>): Product {
@@ -125,7 +142,7 @@ const clipBio = (s: string) => (s.length <= BIO_MAX ? s : s.slice(0, BIO_MAX - 1
 
 export async function generateStore(profile: CreatorProfile, force = false) {
   const { text, tier } = creatorContext(profile);
-  const out = await callClaude(
+  const out = await callModel(
     StoreSchema,
     `${text}
 
@@ -144,7 +161,7 @@ Before that, judge input_quality: "too_vague" ONLY if there is no Instagram data
 
 export async function generateBio(profile: CreatorProfile, current: string) {
   const { text } = creatorContext(profile);
-  const out = await callClaude(
+  const out = await callModel(
     z.object({ bio: z.string() }),
     `${text}\n\nCurrent bio: "${current}"\nWrite a fresh alternative bio (max ${BIO_MAX} characters) with a different angle from the current one.`,
     800,
@@ -163,6 +180,6 @@ export async function generateProduct(
     opts.titleHint ? `The creator described it as: "${opts.titleHint}". Keep their idea; improve the wording, write the description and suggest a price.` : "",
     opts.avoid.length ? `It must be clearly different from the products already in the store: ${opts.avoid.map((t) => `"${t}"`).join(", ")}.` : "",
   ].filter(Boolean).join("\n");
-  const out = await callClaude(z.object({ product: ProductSchema }), `${text}\n\n${ask}`, 1500);
+  const out = await callModel(z.object({ product: ProductSchema }), `${text}\n\n${ask}`, 1500);
   return toProduct(out.product, tier);
 }

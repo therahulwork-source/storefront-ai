@@ -9,8 +9,8 @@ export async function POST(req: Request) {
   if (!profile || typeof profile.category !== "string") {
     return Response.json({ error: "Missing creator details." }, { status: 400 });
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json({ error: "AI isn't configured on this server (ANTHROPIC_API_KEY missing).", code: "config" }, { status: 503 });
+  if (!process.env.GEMINI_API_KEY) {
+    return Response.json({ error: "AI isn't configured on this server (GEMINI_API_KEY missing).", code: "config" }, { status: 503 });
   }
   try {
     switch (body.kind) {
@@ -34,9 +34,11 @@ export async function POST(req: Request) {
     const err = e instanceof AiError ? e : new AiError("upstream", (e as Error).message);
     console.error("[generate]", err.code, err.message);
     const msg =
-      err.code === "refusal"
+      err.code === "safety"
         ? "The AI couldn't write this one. Try rephrasing your description."
-        : "The AI is taking a break. Please try again.";
+        : err.code === "rate_limit"
+          ? "Lots of people are building stores right now. Please try again in a minute."
+          : "The AI is taking a break. Please try again.";
     return Response.json({ error: msg, code: err.code }, { status: 502 });
   }
 }
