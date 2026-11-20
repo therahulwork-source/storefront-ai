@@ -1,0 +1,298 @@
+"use client";
+import { useRef, useState, type ReactNode } from "react";
+import { nanoid } from "nanoid";
+import { genBio, genProduct, resizeImage } from "@/lib/client";
+import { BIO_MAX, PRODUCT_TYPES, THEMES, type Product, type ProductType, type Store, type ThemeKey } from "@/lib/types";
+import { ProductEditor } from "./ProductEditor";
+import { StoreView } from "./StoreView";
+import { Button, Field, Notice, StepFooter, inputCls } from "./ui";
+
+export type Section = 0 | 1 | 2;
+const SECTIONS = ["Brand", "Products", "Payments"] as const;
+
+function blankProduct(type: ProductType): Product {
+  return {
+    id: nanoid(8),
+    type,
+    format: { digital: "PDF / digital file", session: "Video call", locked: "Locked post", affiliate: "Recommended product", physical: "Physical product" }[type],
+    title: "",
+    description: "",
+    price: { digital: 199, session: 499, locked: 49, affiliate: 499, physical: 499 }[type],
+    compareAtPrice: null,
+    priceRationale: "",
+    ctaLabel: { digital: "Get it", session: "Book a call", locked: "Unlock", affiliate: "Shop now", physical: "Buy now" }[type],
+    images: [],
+    sessionKind: type === "session" ? "one_on_one" : undefined,
+    durationMinutes: type === "session" ? 30 : undefined,
+    aiGenerated: false,
+  };
+}
+
+export function Editor({
+  store,
+  setStore,
+  mode,
+  section,
+  setSection,
+  topBar,
+  primaryAction,
+  onRegenerateAll,
+}: {
+  store: Store;
+  setStore: (s: Store) => void;
+  mode: "setup" | "live";
+  section: Section;
+  setSection: (s: Section) => void;
+  topBar?: ReactNode;
+  primaryAction: ReactNode;
+  onRegenerateAll?: () => void;
+}) {
+  const [bioBusy, setBioBusy] = useState(false);
+  const [ideaBusy, setIdeaBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [picker, setPicker] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [preview, setPreview] = useState(false);
+  const avatarRef = useRef<HTMLInputElement>(null);
+  const set = (patch: Partial<Store>) => setStore({ ...store, ...patch });
+
+  const upi = store.upiId.trim();
+  const upiBad = upi.length > 0 && !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(upi);
+
+  async function rewriteBio() {
+    setBioBusy(true);
+    setErr(null);
+    try {
+      set({ bio: await genBio(store.profile, store.bio) });
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBioBusy(false);
+    }
+  }
+
+  async function suggestIdea() {
+    setIdeaBusy(true);
+    setErr(null);
+    try {
+      const p = await genProduct(store.profile, { avoid: store.products.map((x) => x.title) });
+      set({ products: [...store.products, p] });
+      setOpenId(p.id);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setIdeaBusy(false);
+    }
+  }
+
+  function addType(t: ProductType) {
+    const p = blankProduct(t);
+    set({ products: [...store.products, p] });
+    setOpenId(p.id);
+    setPicker(false);
+  }
+
+  return (
+    <div className="flex min-h-dvh flex-col bg-neutral-100 lg:flex-row">
+      <div className="flex-1 lg:max-w-2xl lg:overflow-y-auto lg:border-r lg:border-neutral-200 lg:h-dvh">
+        {topBar}
+        <div className="px-4 py-6 sm:px-8">
+          {mode === "live" ? (
+            <nav className="mb-6 flex gap-1 rounded-full bg-white p-1 shadow-sm">
+              {SECTIONS.map((s, i) => (
+                <button key={s} className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold ${section === i ? "bg-neutral-950 text-white" : "text-neutral-600"}`} onClick={() => setSection(i as Section)}>
+                  {s}
+                </button>
+              ))}
+            </nav>
+          ) : null}
+
+          {section === 0 && (
+            <section>
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">Let&apos;s brand your store</h1>
+              <p className="mt-1 text-neutral-600">{store.products.some((x) => x.aiGenerated) ? "AI wrote this from your details. Change anything you like." : "Here's a starting point. Change anything you like."}</p>
+              <div className="mt-6 flex flex-col gap-6 sm:flex-row">
+                <div className="flex flex-col items-center gap-2">
+                  {store.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={store.avatar} alt="" className="h-28 w-28 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-28 w-28 items-center justify-center rounded-full bg-neutral-200 text-4xl text-neutral-500">👤</div>
+                  )}
+                  <div className="flex gap-1">
+                    <Button variant="secondary" className="!px-3 !py-1.5 text-xs" onClick={() => avatarRef.current?.click()}>
+                      ✎ {store.avatar ? "Change" : "Add photo"}
+                    </Button>
+                    {store.avatar && (
+                      <Button variant="ghost" className="!px-3 !py-1.5 text-xs" onClick={() => set({ avatar: null })}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    ref={avatarRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!f) return;
+                      try {
+                        set({ avatar: await resizeImage(f, 320, 0.8) });
+                      } catch (x) {
+                        setErr((x as Error).message);
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex-1 space-y-4">
+                  <Field label="Display name">
+                    <input className={inputCls} value={store.displayName} maxLength={40} onChange={(e) => set({ displayName: e.target.value })} />
+                  </Field>
+                  <Field
+                    label="Bio"
+                    right={<span className={`text-xs ${store.bio.length > BIO_MAX ? "text-red-600" : "text-neutral-400"}`}>{store.bio.length}/{BIO_MAX}</span>}
+                  >
+                    <textarea className={`${inputCls} min-h-24`} value={store.bio} maxLength={BIO_MAX} onChange={(e) => set({ bio: e.target.value })} />
+                  </Field>
+                  <Button variant="ai" loading={bioBusy} onClick={rewriteBio}>
+                    ✨ Rewrite bio
+                  </Button>
+                  <div>
+                    <p className="mb-1.5 text-sm font-medium text-neutral-800">Theme</p>
+                    <div className="flex gap-2">
+                      {(Object.keys(THEMES) as ThemeKey[]).map((k) => (
+                        <button
+                          key={k}
+                          onClick={() => set({ theme: k })}
+                          className={`flex flex-col items-center gap-1 rounded-xl p-1.5 text-xs ${store.theme === k ? "ring-2 ring-neutral-900" : ""}`}
+                        >
+                          <span className="h-10 w-14 rounded-lg" style={{ background: THEMES[k].bg }} />
+                          {THEMES[k].label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {section === 1 && (
+            <section>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">What you&apos;ll sell</h1>
+                  <p className="mt-1 text-neutral-600">{store.products.some((x) => x.aiGenerated) ? "AI picked these for your audience and priced them for Indian buyers." : "Starter products to edit, or use AI to fill them in."} Open any one to edit it.</p>
+                </div>
+              </div>
+              <div className="mt-6 space-y-3">
+                {store.products.map((p, i) => (
+                  <ProductEditor
+                    key={p.id}
+                    p={p}
+                    profile={store.profile}
+                    defaultOpen={openId === p.id}
+                    others={store.products.filter((x) => x.id !== p.id).map((x) => x.title)}
+                    onChange={(np) => set({ products: store.products.map((x, j) => (j === i ? np : x)) })}
+                    onDelete={() => set({ products: store.products.filter((x) => x.id !== p.id) })}
+                  />
+                ))}
+                {store.products.length === 0 && <Notice tone="warn">Your store needs at least one product before it can go live.</Notice>}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={() => setPicker(!picker)}>
+                  + Add a product
+                </Button>
+                <Button variant="ai" loading={ideaBusy} onClick={suggestIdea} disabled={store.products.length >= 12}>
+                  ✨ Suggest another idea
+                </Button>
+                {onRegenerateAll && (
+                  <Button variant="ghost" onClick={onRegenerateAll}>
+                    ↻ Regenerate whole store
+                  </Button>
+                )}
+              </div>
+              {picker && (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <p className="text-sm font-medium text-neutral-800 sm:col-span-2">What do you want to sell?</p>
+                  {PRODUCT_TYPES.map((t) => (
+                    <button key={t.type} onClick={() => addType(t.type)} className="flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-3 text-left hover:border-neutral-400">
+                      <span className="text-2xl">{t.emoji}</span>
+                      <span>
+                        <span className="block font-semibold text-neutral-900">{t.label}</span>
+                        <span className="block text-xs text-neutral-500">{t.hint}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {section === 2 && (
+            <section>
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">Get paid</h1>
+              <p className="mt-1 text-neutral-600">Where should your earnings go?</p>
+              <div className="mt-6 space-y-4">
+                <Notice tone="warn">Demo: payouts aren&apos;t connected yet, so nothing is charged or paid out. You can skip this step.</Notice>
+                <Field label="UPI ID (optional)" hint="e.g. yourname@okaxis. Bank account setup comes later.">
+                  <input className={inputCls} value={store.upiId} placeholder="yourname@bank" onChange={(e) => set({ upiId: e.target.value })} />
+                </Field>
+                {upiBad && <p className="text-xs text-red-600">That doesn&apos;t look like a UPI ID. It should look like name@bank.</p>}
+              </div>
+            </section>
+          )}
+
+          {err && (
+            <div className="mt-4">
+              <Notice tone="error">{err}</Notice>
+            </div>
+          )}
+
+          {mode === "setup" ? (
+            <StepFooter step={section + 1} total={3}>
+              {section > 0 && (
+                <Button variant="ghost" onClick={() => setSection((section - 1) as Section)}>
+                  Back
+                </Button>
+              )}
+              {section < 2 ? (
+                <Button onClick={() => setSection((section + 1) as Section)} disabled={section === 1 && store.products.length === 0}>
+                  Next ›
+                </Button>
+              ) : (
+                primaryAction
+              )}
+            </StepFooter>
+          ) : (
+            <div className="sticky bottom-0 mt-8 flex justify-end gap-2 bg-neutral-100/90 py-3 backdrop-blur">{primaryAction}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop: phone preview */}
+      <aside className="hidden flex-1 items-center justify-center p-8 lg:flex lg:h-dvh lg:sticky lg:top-0">
+        <div className="h-[760px] w-[380px] overflow-hidden rounded-[44px] border-[10px] border-neutral-900 bg-black shadow-2xl">
+          <div className="h-full overflow-y-auto">
+            <StoreView store={store} />
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile: preview toggle */}
+      <button onClick={() => setPreview(true)} className="fixed bottom-20 right-4 z-40 rounded-full bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
+        👁 Preview
+      </button>
+      {preview && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black lg:hidden">
+          <button onClick={() => setPreview(false)} className="fixed right-4 top-4 z-50 rounded-full bg-white px-4 py-2 text-sm font-semibold shadow">
+            ✕ Close preview
+          </button>
+          <StoreView store={store} />
+        </div>
+      )}
+    </div>
+  );
+}
