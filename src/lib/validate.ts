@@ -7,6 +7,7 @@ export function validateStore(s: unknown): { ok: true; store: Store } | { ok: fa
   if (!st || typeof st !== "object") return { ok: false, error: "Missing store." };
   if (!st.displayName?.trim()) return { ok: false, error: "Add a display name." };
   if (!Array.isArray(st.products) || st.products.length === 0) return { ok: false, error: "Add at least one product." };
+  if (st.contentConfirmed !== true) return { ok: false, error: "Please confirm your products contain no adult, explicit or illegal content." };
   if (st.products.length > 12) return { ok: false, error: "Up to 12 products for now." };
   for (const p of st.products) {
     if (!p.title?.trim()) return { ok: false, error: "Every product needs a title." };

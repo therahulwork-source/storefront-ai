@@ -24,6 +24,7 @@ function blankProduct(type: ProductType): Product {
     images: [],
     sessionKind: type === "session" ? "one_on_one" : undefined,
     durationMinutes: type === "session" ? 30 : undefined,
+    ...(type === "physical" ? { deliveryCharge: 0, shipsWithin: "3-7" as const, returns: "none" as const } : {}),
     aiGenerated: false,
   };
 }
@@ -253,7 +254,10 @@ export function Editor({
                     <button key={t.type} onClick={() => addType(t.type)} className="flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-3 text-left hover:border-neutral-400">
                       <span className="text-2xl">{t.emoji}</span>
                       <span>
-                        <span className="block font-semibold text-neutral-900">{t.label}</span>
+                        <span className="block font-semibold text-neutral-900">
+                          {t.label}
+                          {t.beta && <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Beta</span>}
+                        </span>
                         <span className="block text-xs text-neutral-500">{t.hint}</span>
                       </span>
                     </button>
@@ -376,6 +380,18 @@ export function Editor({
             <div className="mt-4">
               <Notice tone="error">{err}</Notice>
             </div>
+          )}
+
+          {((mode === "setup" && section === 2) || (mode === "live" && section <= 2)) && (
+            <label className="mt-6 flex items-start gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-neutral-900"
+                checked={Boolean(store.contentConfirmed)}
+                onChange={(e) => set({ contentConfirmed: e.target.checked })}
+              />
+              <span>I confirm my products are my own and contain no adult, explicit or illegal content.</span>
+            </label>
           )}
 
           {mode === "setup" ? (

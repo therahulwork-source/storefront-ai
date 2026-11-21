@@ -127,7 +127,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       primaryAction={
         <div className="flex items-center gap-3">
           {saveMsg && <span className="text-sm text-neutral-600">{saveMsg}</span>}
-          <Button onClick={save} loading={saving} disabled={!dirty || store.products.length === 0}>
+          <Button onClick={save} loading={saving} disabled={!dirty || store.products.length === 0 || !store.contentConfirmed}>
             {dirty ? "Save changes" : "All changes saved"}
           </Button>
         </div>

@@ -47,6 +47,11 @@ Affiliate and physical products aren't constrained (₹99–9,999); the real ite
 
 These ranges are a v1 assumption built from public listings. v2 should learn them from SuperProfile's own sales data and price experiments.
 
+## Physical products (beta) and content rules
+
+- **Physical products are fulfilled by the creator**, like selling on Instagram. The creator sets delivery charge (free or flat), ships within (1–3 / 3–7 / 7–14 days, or custom up to 30) and returns (none or 7 days, handled by the creator). Buyers see one line: "🚚 Free delivery · Ships in 3–7 days · No returns". Late-order handling (deadline reminders and a buyer-triggered refund paid from the held payout) is planned, not built.
+- **Content confirmation:** a store can't launch or save until the creator confirms the products are their own and contain no adult, explicit or illegal content. The server enforces this too. File scanning, keyword checks and reporting are planned, not built; v1 stores only file names, not files.
+
 ## Pro waitlist (demand test)
 
 The Pro tab is a fake-door test: "Join the waitlist" at ₹999/month or ₹7,999/year records intent before Pro is built. No count is shown to creators. Read the data in the Upstash console:

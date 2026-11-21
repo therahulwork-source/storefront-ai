@@ -189,7 +189,7 @@ export default function CreatePage() {
         primaryAction={
           <div className="flex flex-col items-end gap-2">
             {launchErr && <span className="text-sm text-red-600">{launchErr}</span>}
-            <Button onClick={launch} loading={launching} disabled={store.products.length === 0}>
+            <Button onClick={launch} loading={launching} disabled={store.products.length === 0 || !store.contentConfirmed}>
               🚀 Launch my store
             </Button>
           </div>

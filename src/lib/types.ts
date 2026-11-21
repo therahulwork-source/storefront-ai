@@ -1,11 +1,11 @@
 export type ProductType = "digital" | "session" | "locked" | "affiliate" | "physical";
 
-export const PRODUCT_TYPES: { type: ProductType; label: string; hint: string; emoji: string }[] = [
+export const PRODUCT_TYPES: { type: ProductType; label: string; hint: string; emoji: string; beta?: boolean }[] = [
   { type: "digital", label: "Digital files", hint: "E-books, PDFs, templates, presets, videos", emoji: "📁" },
   { type: "session", label: "Online sessions", hint: "1:1 calls or group classes on Google Meet", emoji: "📅" },
   { type: "locked", label: "Locked content", hint: "Fans pay to unlock a file or post", emoji: "🔒" },
   { type: "affiliate", label: "Affiliate products", hint: "Products you recommend, for a commission", emoji: "🤝" },
-  { type: "physical", label: "Physical products", hint: "Merch or things you make and ship", emoji: "📦" },
+  { type: "physical", label: "Physical products", hint: "Merch or things you make. You ship them yourself.", emoji: "📦", beta: true },
 ];
 
 export const CATEGORIES = [
@@ -33,8 +33,26 @@ export type Product = {
   meetLink?: string;
   fileName?: string;
   affiliateUrl?: string;
+  // physical products (fulfilled by the creator)
+  deliveryCharge?: number; // 0 = free (included in price)
+  shipsWithin?: "1-3" | "3-7" | "7-14" | "custom";
+  shipsCustomDays?: number; // 1–30, when shipsWithin is "custom"
+  returns?: "none" | "7days";
   aiGenerated: boolean;
 };
+
+export const MAX_SHIP_DAYS = 30;
+
+export function shippingSummary(p: Product): string | null {
+  if (p.type !== "physical") return null;
+  const delivery = p.deliveryCharge ? `₹${p.deliveryCharge.toLocaleString("en-IN")} delivery` : "Free delivery";
+  const days =
+    p.shipsWithin === "custom"
+      ? `Ships in ${Math.min(MAX_SHIP_DAYS, Math.max(1, p.shipsCustomDays ?? 7))} days`
+      : `Ships in ${(p.shipsWithin ?? "3-7").replace("-", "–")} days`;
+  const returns = p.returns === "7days" ? "7-day returns" : "No returns";
+  return `🚚 ${delivery} · ${days} · ${returns}`;
+}
 
 export type Language = "english" | "hinglish";
 
@@ -74,6 +92,7 @@ export type Store = {
   theme: ThemeKey;
   products: Product[];
   upiId: string;
+  contentConfirmed?: boolean; // creator confirmed products are theirs and contain no adult/explicit/illegal content
   createdAt: number;
   updatedAt: number;
 };

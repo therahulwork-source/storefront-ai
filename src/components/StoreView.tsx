@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { THEMES, type Product, type Store } from "@/lib/types";
+import { THEMES, shippingSummary, type Product, type Store } from "@/lib/types";
 import { formatINR } from "./ui";
 
 const TYPE_EMOJI: Record<Product["type"], string> = { digital: "📘", session: "📅", locked: "🔒", affiliate: "🤝", physical: "📦" };
@@ -110,6 +110,7 @@ function ProductCard({ p, theme, onBuy }: { p: Product; theme: (typeof THEMES)[k
           </p>
         )}
         {p.type === "session" && p.schedule && <p className="mt-2 text-xs" style={{ color: theme.sub }}>🗓 {p.schedule}</p>}
+        {shippingSummary(p) && <p className="mt-2 text-xs" style={{ color: theme.sub }}>{shippingSummary(p)}</p>}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold">{p.price > 0 ? formatINR(p.price) : "Free"}</span>

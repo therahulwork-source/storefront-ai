@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { genProduct, resizeImage } from "@/lib/client";
 import { bandFor, tierFor } from "@/lib/pricing";
-import { PRODUCT_TYPES, type CreatorProfile, type Product } from "@/lib/types";
+import { MAX_SHIP_DAYS, PRODUCT_TYPES, type CreatorProfile, type Product } from "@/lib/types";
 import { Button, Field, Notice, formatINR, inputCls } from "./ui";
 
 const MAX_IMAGES: Record<Product["type"], number> = { digital: 1, session: 1, locked: 1, affiliate: 1, physical: 6 };
@@ -27,7 +27,8 @@ export function ProductEditor({
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<Product>) => onChange({ ...p, ...patch });
-  const typeLabel = PRODUCT_TYPES.find((t) => t.type === p.type)?.label ?? p.type;
+  const typeInfo = PRODUCT_TYPES.find((t) => t.type === p.type);
+  const typeLabel = typeInfo?.label ?? p.type;
 
   async function regenerate(useTitleAsHint: boolean) {
     setBusy(true);
@@ -75,7 +76,8 @@ export function ProductEditor({
       <button type="button" className="flex w-full items-center gap-3 p-4 text-left" onClick={() => setOpen(!open)}>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-neutral-500">
-            {typeLabel} · {p.format || "—"} {p.aiGenerated && <span className="ml-1 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">Storefront AI</span>}
+            {typeLabel}
+            {typeInfo?.beta && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Beta</span>} · {p.format || "—"} {p.aiGenerated && <span className="ml-1 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">Storefront AI</span>}
           </p>
           <p className="truncate font-semibold text-neutral-900">{p.title || "New product"}</p>
         </div>
@@ -167,6 +169,63 @@ export function ProductEditor({
               />
               {p.fileName && <span className="mt-1 block text-xs text-neutral-600">📎 {p.fileName}</span>}
             </Field>
+          )}
+          {p.type === "physical" && (
+            <div className="space-y-3 rounded-xl border border-neutral-200 p-3">
+              <p className="text-xs text-neutral-600">📦 You pack, ship and handle returns yourself, just like selling on Instagram.</p>
+              <Field label="Delivery charge">
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    className={`${inputCls} w-auto`}
+                    value={p.deliveryCharge ? "flat" : "free"}
+                    onChange={(e) => set({ deliveryCharge: e.target.value === "free" ? 0 : p.deliveryCharge || 49 })}
+                  >
+                    <option value="free">Free (included in price)</option>
+                    <option value="flat">Flat charge</option>
+                  </select>
+                  {Boolean(p.deliveryCharge) && (
+                    <input
+                      className={`${inputCls} w-28`}
+                      type="number"
+                      min={1}
+                      aria-label="Delivery charge in rupees"
+                      value={p.deliveryCharge}
+                      onChange={(e) => set({ deliveryCharge: Math.max(1, Math.round(Number(e.target.value) || 1)) })}
+                    />
+                  )}
+                </div>
+              </Field>
+              <Field label="Ships within" hint={p.shipsWithin === "custom" ? `Up to ${MAX_SHIP_DAYS} days.` : undefined}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select className={`${inputCls} w-auto`} value={p.shipsWithin ?? "3-7"} onChange={(e) => set({ shipsWithin: e.target.value as Product["shipsWithin"], shipsCustomDays: p.shipsCustomDays ?? 10 })}>
+                    <option value="1-3">1–3 days</option>
+                    <option value="3-7">3–7 days</option>
+                    <option value="7-14">7–14 days</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                  {p.shipsWithin === "custom" && (
+                    <>
+                      <input
+                        className={`${inputCls} w-20`}
+                        type="number"
+                        min={1}
+                        max={MAX_SHIP_DAYS}
+                        aria-label="Ships within, days"
+                        value={p.shipsCustomDays ?? 10}
+                        onChange={(e) => set({ shipsCustomDays: Math.min(MAX_SHIP_DAYS, Math.max(1, Math.round(Number(e.target.value) || 1))) })}
+                      />
+                      <span className="text-sm text-neutral-600">days</span>
+                    </>
+                  )}
+                </div>
+              </Field>
+              <Field label="Returns">
+                <select className={`${inputCls} w-auto`} value={p.returns ?? "none"} onChange={(e) => set({ returns: e.target.value as Product["returns"] })}>
+                  <option value="none">No returns</option>
+                  <option value="7days">Returns within 7 days (you handle them)</option>
+                </select>
+              </Field>
+            </div>
           )}
           {p.type === "affiliate" && (
             <Field label="Affiliate link">
