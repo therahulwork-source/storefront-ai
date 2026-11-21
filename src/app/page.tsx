@@ -12,18 +12,18 @@ export default function Home() {
   return (
     <main className="min-h-dvh bg-gradient-to-br from-slate-950 via-indigo-950 to-rose-900 text-white">
       <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-20 text-center sm:py-28">
-        <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium">For Indian creators · free</span>
-        <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-6xl">Your Instagram, turned into a store in 2 minutes.</h1>
+        <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium">For creators · Free</span>
+        <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-6xl">Create your SuperStore in minutes.</h1>
         <p className="mt-5 max-w-xl text-lg text-white/75">
-          Share your handle or a line about what you do. AI writes your bio, suggests products your followers will actually buy, and prices them in rupees.
+          Share your social handle or a line about what you do. We&apos;ll draft your bio, suggest products your followers will actually buy, and price them for you.
         </p>
         <Link href="/create" className="mt-8 rounded-full bg-white px-7 py-3.5 text-base font-semibold text-neutral-950 hover:bg-white/90">
           ✨ Build my store
         </Link>
         <div className="mt-14 grid w-full gap-3 text-left sm:grid-cols-3">
           {[
-            ["1", "Tell us about you", "Your Instagram handle, or one line on what you post."],
-            ["2", "AI drafts your store", "Bio, 3 product ideas, descriptions and ₹ prices."],
+            ["1", "Tell us about you", "Your social handle, or one line on what you create."],
+            ["2", "We draft your store", "Bio, product ideas, descriptions and ₹ prices."],
             ["3", "Edit and share", "Change anything, then put the link in your bio."],
           ].map(([n, t, d]) => (
             <div key={n} className="rounded-2xl bg-white/10 p-4">

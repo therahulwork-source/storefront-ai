@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Storefront AI",
-  description: "Turn your Instagram into a ready-to-share store in 2 minutes.",
+  title: "SuperStore",
+  description: "Create your SuperStore in minutes: a bio, product ideas and ₹ prices, ready to share.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
