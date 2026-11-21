@@ -341,13 +341,21 @@ export default function CreatePage() {
                 </Notice>
               )}
               {ig.status === "failed" && handles.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {handles.map((h) => (
-                    <span key={h} className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-800">
-                      📸 @{normaliseHandle(h) ?? h}
-                    </span>
-                  ))}
-                  <span className="self-center text-xs text-neutral-500">Linked on your store</span>
+                <div>
+                  <div className="flex flex-wrap gap-2">
+                    {handles.map((h) => {
+                      const handle = normaliseHandle(h) ?? h;
+                      return (
+                        <span key={h} className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-800">
+                          📸 @{handle}
+                          <a href={`https://instagram.com/${handle}`} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-700 hover:underline">
+                            Check it opens your profile ↗
+                          </a>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs text-neutral-500">We&apos;ll add this link to your store. Fix it in the previous step if it&apos;s wrong.</p>
                 </div>
               )}
             </div>
