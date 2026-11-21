@@ -55,6 +55,7 @@ export function Editor({
   const [picker, setPicker] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const [device, setDevice] = useState<"mobile" | "desktop">("mobile");
   const [kycMsg, setKycMsg] = useState(false);
   type Joined = { plan: "monthly" | "yearly" } | null;
   const [joined, setJoined] = useState<Joined>(null);
@@ -398,12 +399,48 @@ export function Editor({
         </div>
       </div>
 
-      {/* Desktop: phone preview */}
-      <aside className="hidden flex-1 items-center justify-center p-8 lg:flex lg:h-dvh lg:sticky lg:top-0">
-        <div className="h-[760px] w-[380px] overflow-hidden rounded-[44px] border-[10px] border-neutral-900 bg-black shadow-2xl">
-          <div className="h-full overflow-y-auto">
-            <StoreView store={store} />
+      {/* Desktop: live preview with Mobile / Desktop switch */}
+      <aside className="hidden flex-1 flex-col bg-neutral-900 p-6 lg:sticky lg:top-0 lg:flex lg:h-dvh">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-white">Preview</h2>
+          <div className="flex gap-1 rounded-full bg-white/10 p-1" role="tablist" aria-label="Preview device">
+            {(["mobile", "desktop"] as const).map((d) => (
+              <button
+                key={d}
+                role="tab"
+                aria-selected={device === d}
+                onClick={() => setDevice(d)}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${device === d ? "bg-white text-neutral-950" : "text-white/70 hover:text-white"}`}
+              >
+                {d === "mobile" ? "📱 Mobile" : "🖥 Desktop"}
+              </button>
+            ))}
           </div>
+        </div>
+        <div className="flex min-h-0 flex-1 items-center justify-center pt-6">
+          {device === "mobile" ? (
+            <div className="h-full max-h-[760px] w-[380px] overflow-hidden rounded-[44px] border-[10px] border-neutral-950 bg-black shadow-2xl">
+              <div className="h-full overflow-y-auto">
+                <StoreView store={store} />
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-full max-h-[760px] w-full max-w-[1000px] flex-col overflow-hidden rounded-xl border border-neutral-700 bg-black shadow-2xl">
+              <div className="flex items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 py-2">
+                <span className="flex gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                </span>
+                <span className="mx-auto truncate rounded-md bg-neutral-700 px-4 py-1 text-xs text-white/80">
+                  {store.slug && typeof window !== "undefined" ? `${window.location.host}/s/${store.slug}` : "Your store link"}
+                </span>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <StoreView store={store} />
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 
