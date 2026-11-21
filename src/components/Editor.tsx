@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { nanoid } from "nanoid";
 import { api, genBio, genProduct, resizeImage } from "@/lib/client";
 import { BIO_MAX, PRODUCT_TYPES, THEMES, type Product, type ProductType, type Store, type ThemeKey } from "@/lib/types";
+import { HelpPanel } from "./HelpPanel";
 import { ProductEditor } from "./ProductEditor";
 import { StoreView } from "./StoreView";
 import { Button, Field, Notice, StepFooter, inputCls } from "./ui";
@@ -39,6 +40,7 @@ export function Editor({
   primaryAction,
   onRegenerateAll,
   pro,
+  help,
 }: {
   store: Store;
   setStore: (s: Store) => void;
@@ -49,6 +51,7 @@ export function Editor({
   primaryAction: ReactNode;
   onRegenerateAll?: () => void;
   pro?: { slug: string; editKey: string };
+  help?: { open: boolean; onClose: () => void; storeUrl: string };
 }) {
   const [bioBusy, setBioBusy] = useState(false);
   const [ideaBusy, setIdeaBusy] = useState(false);
@@ -193,7 +196,7 @@ export function Editor({
                     ✨ Rewrite bio
                   </Button>
                   <div>
-                    <p className="mb-1.5 text-sm font-medium text-neutral-800">Theme</p>
+                    <p id="theme-picker" className="mb-1.5 scroll-mt-24 text-sm font-medium text-neutral-800">Theme</p>
                     <div className="flex gap-2">
                       {(Object.keys(THEMES) as ThemeKey[]).map((k) => (
                         <button
@@ -459,6 +462,27 @@ export function Editor({
           )}
         </div>
       </aside>
+
+      {help?.open && (
+        <HelpPanel
+          storeUrl={help.storeUrl}
+          onClose={help.onClose}
+          onEditBrand={() => {
+            setSection(0);
+            help.onClose();
+          }}
+          onChangeTheme={() => {
+            setSection(0);
+            help.onClose();
+            setTimeout(() => document.getElementById("theme-picker")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          }}
+          onAddProduct={() => {
+            setSection(1);
+            setPicker(true);
+            help.onClose();
+          }}
+        />
+      )}
 
       {/* Mobile: preview toggle */}
       <button onClick={() => setPreview(true)} className="fixed bottom-20 right-4 z-40 rounded-full bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">

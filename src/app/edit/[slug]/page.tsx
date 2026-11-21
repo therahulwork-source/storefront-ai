@@ -19,6 +19,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [copied, setCopied] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [showNew, setShowNew] = useState(sp.get("new") === "1");
   const [origin, setOrigin] = useState("");
 
@@ -89,6 +90,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       setStore={setStore}
       mode="live"
       pro={{ slug, editKey: key }}
+      help={{ open: helpOpen, onClose: () => setHelpOpen(false), storeUrl: url }}
       section={section}
       setSection={setSection}
       topBar={
@@ -113,6 +115,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
             <a className="rounded-full px-3 py-2 text-sm font-semibold text-blue-700" href={url} target="_blank" rel="noopener noreferrer">
               Open ↗
             </a>
+            <button onClick={() => setHelpOpen(true)} className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50">
+              ❓ Help
+            </button>
           </div>
           <div className="mt-3 flex gap-6 text-sm text-neutral-600">
             <span>
