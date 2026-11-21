@@ -1,7 +1,7 @@
 "use client";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { nanoid } from "nanoid";
-import { genBio, genProduct, resizeImage } from "@/lib/client";
+import { api, genBio, genProduct, resizeImage } from "@/lib/client";
 import { BIO_MAX, PRODUCT_TYPES, THEMES, type Product, type ProductType, type Store, type ThemeKey } from "@/lib/types";
 import { ProductEditor } from "./ProductEditor";
 import { StoreView } from "./StoreView";
@@ -37,6 +37,7 @@ export function Editor({
   topBar,
   primaryAction,
   onRegenerateAll,
+  pro,
 }: {
   store: Store;
   setStore: (s: Store) => void;
@@ -46,6 +47,7 @@ export function Editor({
   topBar?: ReactNode;
   primaryAction: ReactNode;
   onRegenerateAll?: () => void;
+  pro?: { slug: string; editKey: string };
 }) {
   const [bioBusy, setBioBusy] = useState(false);
   const [ideaBusy, setIdeaBusy] = useState(false);
@@ -54,7 +56,34 @@ export function Editor({
   const [openId, setOpenId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [kycMsg, setKycMsg] = useState(false);
-  const [proMsg, setProMsg] = useState(false);
+  type Joined = { plan: "monthly" | "yearly" } | null;
+  const [joined, setJoined] = useState<Joined>(null);
+  const [joining, setJoining] = useState<"monthly" | "yearly" | null>(null);
+  const [proErr, setProErr] = useState("");
+  const proViewed = useRef(false);
+
+  // Fake-door test: record one Pro tab view per visit, and load any earlier join.
+  useEffect(() => {
+    if (section !== 4 || !pro || proViewed.current) return;
+    proViewed.current = true;
+    api<{ joined: Joined }>("/api/pro", { ...pro, action: "view" })
+      .then((r) => setJoined(r.joined))
+      .catch(() => {});
+  }, [section, pro]);
+
+  async function joinWaitlist(plan: "monthly" | "yearly") {
+    if (!pro) return;
+    setJoining(plan);
+    setProErr("");
+    try {
+      const r = await api<{ joined: Joined }>("/api/pro", { ...pro, action: "join", plan });
+      setJoined(r.joined);
+    } catch (e) {
+      setProErr((e as Error).message);
+    } finally {
+      setJoining(null);
+    }
+  }
   const avatarRef = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<Store>) => setStore({ ...store, ...patch });
 
@@ -314,14 +343,30 @@ export function Editor({
                 <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-neutral-700">🔒 Funnel insights with Pro</div>
               </div>
               <div className="mt-6 rounded-2xl bg-neutral-950 p-5 text-white">
-                <p className="text-2xl font-bold">
-                  ₹999<span className="text-base font-medium text-white/70">/month</span>
-                </p>
-                <p className="mt-1 text-sm text-white/75">or ₹7,999/year (save 33%)</p>
-                <button onClick={() => setProMsg(true)} className="mt-4 w-full rounded-full bg-white py-2.5 text-sm font-semibold text-neutral-950 sm:w-auto sm:px-6">
-                  Upgrade to Pro
-                </button>
-                {proMsg && <p className="mt-3 text-sm text-white/80">Pro is coming soon.</p>}
+                <p className="text-sm font-medium text-white/70">Pro is launching soon. Join the waitlist for your plan.</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {([
+                    ["monthly", "₹999", "/month", "Cancel anytime"],
+                    ["yearly", "₹7,999", "/year", "Save 33%"],
+                  ] as const).map(([plan, price, per, note]) => (
+                    <div key={plan} className={`rounded-xl p-4 ${joined?.plan === plan ? "bg-white/20 ring-2 ring-white" : "bg-white/10"}`}>
+                      <p className="text-2xl font-bold">
+                        {price}
+                        <span className="text-base font-medium text-white/70">{per}</span>
+                      </p>
+                      <p className="text-xs text-white/70">{note}</p>
+                      <button
+                        onClick={() => joinWaitlist(plan)}
+                        disabled={Boolean(joined) || joining !== null || !pro}
+                        className="mt-3 w-full rounded-full bg-white py-2 text-sm font-semibold text-neutral-950 disabled:opacity-60"
+                      >
+                        {joined?.plan === plan ? "On the waitlist ✓" : joining === plan ? "Joining…" : "Join the waitlist"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {joined && <p className="mt-3 text-sm text-white/85">You&apos;re on the waitlist. We&apos;ll let you know when Pro launches.</p>}
+                {proErr && <p className="mt-3 text-sm text-red-300">{proErr}</p>}
               </div>
             </section>
           )}

@@ -88,6 +88,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       store={store}
       setStore={setStore}
       mode="live"
+      pro={{ slug, editKey: key }}
       section={section}
       setSection={setSection}
       topBar={

@@ -47,6 +47,14 @@ Affiliate and physical products aren't constrained (₹99–9,999); the real ite
 
 These ranges are a v1 assumption built from public listings. v2 should learn them from SuperProfile's own sales data and price experiments.
 
+## Pro waitlist (demand test)
+
+The Pro tab is a fake-door test: "Join the waitlist" at ₹999/month or ₹7,999/year records intent before Pro is built. No count is shown to creators. Read the data in the Upstash console:
+- `pro:stats`: `views`, `joins`, `joins:plan:monthly|yearly`, plus `views:<category>|<tier>` and `joins:<category>|<tier>`
+- `pro:waitlist`: one entry per store with plan, category, audience tier and time
+
+Key metric: **Pro intent rate = joins ÷ Pro tab views**, by category and audience size. v1 has no login, so joins are tied to the store, not a contact; in production they'd use the creator's verified phone.
+
 ## Edge cases handled
 
 | Case | Behaviour |
