@@ -7,8 +7,8 @@ import { ProductEditor } from "./ProductEditor";
 import { StoreView } from "./StoreView";
 import { Button, Field, Notice, StepFooter, inputCls } from "./ui";
 
-export type Section = 0 | 1 | 2;
-const SECTIONS = ["Brand", "Products", "Payments"] as const;
+export type Section = 0 | 1 | 2 | 3 | 4;
+const SECTIONS = ["Brand", "Products", "Payments", "Settlements", "Pro ✨"] as const;
 
 function blankProduct(type: ProductType): Product {
   return {
@@ -53,6 +53,8 @@ export function Editor({
   const [picker, setPicker] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const [kycMsg, setKycMsg] = useState(false);
+  const [proMsg, setProMsg] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<Store>) => setStore({ ...store, ...patch });
 
@@ -98,9 +100,9 @@ export function Editor({
         {topBar}
         <div className="px-4 py-6 sm:px-8">
           {mode === "live" ? (
-            <nav className="mb-6 flex gap-1 rounded-full bg-white p-1 shadow-sm">
+            <nav className="mb-6 flex gap-1 overflow-x-auto rounded-full bg-white p-1 shadow-sm">
               {SECTIONS.map((s, i) => (
-                <button key={s} className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold ${section === i ? "bg-neutral-950 text-white" : "text-neutral-600"}`} onClick={() => setSection(i as Section)}>
+                <button key={s} className={`flex-1 shrink-0 whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-semibold sm:px-3 sm:text-sm ${section === i ? "bg-neutral-950 text-white" : "text-neutral-600"}`} onClick={() => setSection(i as Section)}>
                   {s}
                 </button>
               ))}
@@ -241,6 +243,85 @@ export function Editor({
                   <input className={inputCls} value={store.upiId} placeholder="yourname@bank" onChange={(e) => set({ upiId: e.target.value })} />
                 </Field>
                 {upiBad && <p className="text-xs text-red-600">That doesn&apos;t look like a UPI ID. It should look like name@bank.</p>}
+                <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p>
+                      🔒 <b>KYC required before your first payout.</b> We verify your PAN and a bank account in your name. This keeps buyers safe from fake and impersonation stores.
+                    </p>
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">KYC: Not started</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {section === 3 && (
+            <section>
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">Settlements</h1>
+              <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 text-2xl">🔒</div>
+                <p className="mt-4 text-lg font-semibold text-neutral-900">Complete KYC to see your earnings and payouts</p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600">
+                  We verify your PAN and a bank account in the same name before any money moves. This protects buyers from fake stores and protects you from chargebacks.
+                </p>
+                <div className="mx-auto mt-5 max-w-sm rounded-xl bg-neutral-50 p-4 text-left text-sm text-neutral-700">
+                  <p className="font-medium text-neutral-900">After KYC you&apos;ll see:</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    <li>Orders, units sold and items sold</li>
+                    <li>Gross sales, fees and net earnings</li>
+                    <li>Settled and unsettled amounts</li>
+                    <li>A date filter and Excel download</li>
+                  </ul>
+                </div>
+                <Button className="mt-5" onClick={() => setKycMsg(true)}>
+                  Complete KYC
+                </Button>
+                {kycMsg && <p className="mt-3 text-sm text-amber-700">KYC isn&apos;t available in this demo.</p>}
+              </div>
+            </section>
+          )}
+
+          {section === 4 && (
+            <section>
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">SuperStore Pro ✨</h1>
+              <p className="mt-1 text-neutral-600">Grow faster with advanced analytics and performance marketing tools.</p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                  <p className="font-semibold text-neutral-900">🎯 Performance marketing</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-700">
+                    <li>Trackable links for every post and reel</li>
+                    <li>Meta and Google pixel, so you can run ads and measure sales</li>
+                    <li>Discount codes and limited-time offers</li>
+                    <li>Abandoned-checkout reminders on WhatsApp</li>
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                  <p className="font-semibold text-neutral-900">📈 Advanced analytics</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-700">
+                    <li>The full funnel: store visits → buy clicks → purchases</li>
+                    <li>Where buyers come from: Instagram, WhatsApp, YouTube and more</li>
+                    <li>Conversion rate for each product</li>
+                    <li>Repeat buyers and top customers</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="relative mt-4 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4" aria-hidden>
+                <div className="flex h-28 items-end gap-3 blur-[3px]">
+                  {[100, 72, 48, 30, 18].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-t-md bg-violet-300" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-neutral-700">🔒 Funnel insights with Pro</div>
+              </div>
+              <div className="mt-6 rounded-2xl bg-neutral-950 p-5 text-white">
+                <p className="text-2xl font-bold">
+                  ₹999<span className="text-base font-medium text-white/70">/month</span>
+                </p>
+                <p className="mt-1 text-sm text-white/75">or ₹7,999/year (save 33%)</p>
+                <button onClick={() => setProMsg(true)} className="mt-4 w-full rounded-full bg-white py-2.5 text-sm font-semibold text-neutral-950 sm:w-auto sm:px-6">
+                  Upgrade to Pro
+                </button>
+                {proMsg && <p className="mt-3 text-sm text-white/80">Pro is coming soon.</p>}
               </div>
             </section>
           )}
@@ -267,7 +348,7 @@ export function Editor({
               )}
             </StepFooter>
           ) : (
-            <div className="sticky bottom-0 mt-8 flex justify-end gap-2 bg-neutral-100/90 py-3 backdrop-blur">{primaryAction}</div>
+            section <= 2 && <div className="sticky bottom-0 mt-8 flex justify-end gap-2 bg-neutral-100/90 py-3 backdrop-blur">{primaryAction}</div>
           )}
         </div>
       </div>
