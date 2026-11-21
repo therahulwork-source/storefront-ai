@@ -35,7 +35,7 @@ function storeFrom(profile: CreatorProfile, g: Pick<StoreGen, "displayName" | "b
   };
 }
 
-const INVALID_HANDLE = "doesn't look like an Instagram handle. Handles use letters, numbers, dots and underscores.";
+const INVALID_HANDLE = "doesn't look like a valid handle. Handles use letters, numbers, dots and underscores.";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -242,14 +242,14 @@ export default function CreatePage() {
               )}
               <Button onClick={() => generate(false)}>Try again</Button>
             </div>
-            {fails >= 2 && <p className="mt-3 text-right text-xs text-neutral-500">A template gives you editable starter products now. You can use AI on each product later.</p>}
+            {fails >= 2 && <p className="mt-3 text-right text-xs text-neutral-500">A template gives you editable starter products now. You can use Storefront AI on each product later.</p>}
           </div>
         )}
 
         {stage === "wizard" && step === 1 && (
           <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">👋 Let&apos;s build your store in 2 minutes</h1>
-            <p className="mt-2 text-neutral-600">Tell us a little about you, and AI will set up a store you can share today.</p>
+            <h1 className="text-2xl font-bold sm:text-3xl">👋 Let&apos;s build your SuperStore</h1>
+            <p className="mt-2 text-neutral-600">Tell us a little about you, and Storefront AI will set up a store you can share today.</p>
             <div className="mt-8">
               <Field label="What should we call you?">
                 <input autoFocus className={inputCls} value={profile.name} maxLength={40} placeholder="Your name" onChange={(e) => p({ name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && profile.name.trim() && setStep(2)} />
@@ -266,7 +266,7 @@ export default function CreatePage() {
         {stage === "wizard" && step === 2 && (
           <div>
             <h1 className="text-2xl font-bold sm:text-3xl">Hi {profile.name.split(" ")[0]}, what type of content do you create?</h1>
-            <p className="mt-2 text-neutral-600">This helps AI suggest products that sell in your niche.</p>
+            <p className="mt-2 text-neutral-600">This helps Storefront AI suggest products that sell in your niche.</p>
             <div className="mt-6 flex flex-wrap gap-2">
               {CATEGORIES.map((c) => (
                 <button
@@ -280,7 +280,7 @@ export default function CreatePage() {
             </div>
             <div className="my-8 flex items-center gap-3 text-sm text-neutral-600">
               <span className="h-px flex-1 bg-neutral-200" />
-              What&apos;s your Instagram handle?
+              What&apos;s your social handle?
               <span className="h-px flex-1 bg-neutral-200" />
             </div>
             <div className="space-y-2">
@@ -308,7 +308,7 @@ export default function CreatePage() {
                     + Add another handle
                   </button>
                 ) : <span />}
-                <span className="text-neutral-500">No Instagram? Leave it blank.</span>
+                <span className="text-neutral-500">No social handle? Leave it blank.</span>
               </div>
             </div>
             <StepFooter step={2} total={3}>
@@ -375,7 +375,7 @@ export default function CreatePage() {
               </Field>
             </div>
             {aboutNeeded && profile.about.trim().length > 0 && aboutWords < 4 && (
-              <p className="mt-2 text-xs text-amber-700">A few more words helps AI suggest better products.</p>
+              <p className="mt-2 text-xs text-amber-700">A few more words help Storefront AI suggest better products.</p>
             )}
             <StepFooter step={3} total={3}>
               <Button variant="ghost" onClick={() => setStep(2)}>
@@ -405,7 +405,7 @@ function Generating({ profile }: { profile: CreatorProfile }) {
       </div>
       <h1 className="mt-5 text-2xl font-bold">Building your store…</h1>
       <p className="mx-auto mt-3 max-w-sm text-neutral-600">
-        AI is writing your bio and 3 product ideas{profile.category && profile.category !== "Other" ? ` for ${profile.category.toLowerCase()}` : ""}, with prices that suit Indian buyers.
+        Storefront AI is writing your bio and 3 product ideas{profile.category && profile.category !== "Other" ? ` for ${profile.category.toLowerCase()}` : ""}, with prices that suit Indian buyers.
       </p>
       <p className="mt-6 text-xs text-neutral-500">{secs < 15 ? "Usually takes 5–15 seconds." : "Taking a little longer than usual. Hang on…"}</p>
     </div>

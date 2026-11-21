@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Missing creator details." }, { status: 400 });
   }
   if (!process.env.GEMINI_API_KEY) {
-    return Response.json({ error: "AI isn't configured on this server (GEMINI_API_KEY missing).", code: "config" }, { status: 503 });
+    return Response.json({ error: "Storefront AI isn't configured on this server (GEMINI_API_KEY missing).", code: "config" }, { status: 503 });
   }
   try {
     switch (body.kind) {
@@ -35,10 +35,10 @@ export async function POST(req: Request) {
     console.error("[generate]", err.code, err.message);
     const msg =
       err.code === "safety"
-        ? "The AI couldn't write this one. Try rephrasing your description."
+        ? "Storefront AI couldn't write this one. Try rephrasing your description."
         : err.code === "rate_limit"
           ? "Lots of people are building stores right now. Please try again in a minute."
-          : "The AI is taking a break. Please try again.";
+          : "Storefront AI is taking a break. Please try again.";
     return Response.json({ error: msg, code: err.code }, { status: 502 });
   }
 }

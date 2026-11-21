@@ -110,7 +110,7 @@ export function Editor({
           {section === 0 && (
             <section>
               <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">Let&apos;s brand your store</h1>
-              <p className="mt-1 text-neutral-600">{store.products.some((x) => x.aiGenerated) ? "AI wrote this from your details. Change anything you like." : "Here's a starting point. Change anything you like."}</p>
+              <p className="mt-1 text-neutral-600">{store.products.some((x) => x.aiGenerated) ? "Storefront AI wrote this from your details. Change anything you like." : "Here's a starting point. Change anything you like."}</p>
               <div className="mt-6 flex flex-col gap-6 sm:flex-row">
                 <div className="flex flex-col items-center gap-2">
                   {store.avatar ? (
@@ -184,7 +184,7 @@ export function Editor({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">What you&apos;ll sell</h1>
-                  <p className="mt-1 text-neutral-600">{store.products.some((x) => x.aiGenerated) ? "AI picked these for your audience and priced them for Indian buyers." : "Starter products to edit, or use AI to fill them in."} Open any one to edit it.</p>
+                  <p className="mt-1 text-neutral-600">{store.products.some((x) => x.aiGenerated) ? "Storefront AI picked these for your audience and priced them for Indian buyers." : "Starter products to edit, or use Storefront AI to fill them in."} Open any one to edit it.</p>
                 </div>
               </div>
               <div className="mt-6 space-y-3">

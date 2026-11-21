@@ -66,7 +66,7 @@ export function ProductEditor({
       <button type="button" className="flex w-full items-center gap-3 p-4 text-left" onClick={() => setOpen(!open)}>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-neutral-500">
-            {typeLabel} · {p.format || "—"} {p.aiGenerated && <span className="ml-1 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">AI draft</span>}
+            {typeLabel} · {p.format || "—"} {p.aiGenerated && <span className="ml-1 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">Storefront AI</span>}
           </p>
           <p className="truncate font-semibold text-neutral-900">{p.title || "New product"}</p>
         </div>
@@ -77,7 +77,7 @@ export function ProductEditor({
       {open && (
         <div className="space-y-4 border-t border-neutral-100 p-4">
           {isNew && (
-            <Notice tone="info">Describe your idea in the title box, for example &quot;Weekend baking class&quot;, then tap <b>Write with AI</b>. AI writes the description and suggests a price.</Notice>
+            <Notice tone="info">Describe your idea in the title box, for example &quot;Weekend baking class&quot;, then tap <b>Write with Storefront AI</b>. It writes the description and suggests a price.</Notice>
           )}
           <Field label="Title">
             <input className={inputCls} value={p.title} maxLength={80} placeholder="e.g. 7-day home workout plan" onChange={(e) => set({ title: e.target.value })} />
@@ -182,7 +182,7 @@ export function ProductEditor({
           <div className="flex flex-wrap gap-2 pt-1">
             {isNew || !p.aiGenerated ? (
               <Button variant="ai" loading={busy} onClick={() => regenerate(Boolean(p.title))} type="button">
-                ✨ Write with AI
+                ✨ Write with Storefront AI
               </Button>
             ) : (
               <Button variant="ai" loading={busy} onClick={() => regenerate(false)} type="button">

@@ -98,7 +98,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 <p className="text-lg font-bold">🎉 Your store is live!</p>
                 <button onClick={() => setShowNew(false)} aria-label="Dismiss">✕</button>
               </div>
-              <p className="mt-1 text-sm text-white/90">Put the link in your Instagram bio. Bookmark this page: it&apos;s your private link to edit the store.</p>
+              <p className="mt-1 text-sm text-white/90">Put the link in your social bio. Bookmark this page: it&apos;s your private link to edit the store.</p>
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2">
