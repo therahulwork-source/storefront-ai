@@ -6,12 +6,12 @@ Built for the SuperProfile Product Manager assignment ("AI Storefront Generator"
 
 ## What it does
 
-1. **Onboarding (3 steps):** name → content category + Instagram handle(s) → "tell us about you" + language (English / Hinglish).
-2. **Instagram read (best effort):** tries to read the public profile (name, bio, followers, recent captions). Instagram often blocks automated reads. When it does, the creator is told plainly and asked for a line about themselves instead.
+1. **Onboarding (3 steps):** name → content category + social handle(s) → "tell us about you", optional followers range and language (English / Hinglish).
+2. **Instagram read (best effort):** tries to read the public profile (name, bio, followers, recent captions). Instagram usually blocks automated reads, so the handle is treated as an unverified link: the creator sees it with a "Check it opens your profile ↗" link, and their own description carries the store.
 3. **AI drafts the store:** one Gemini call returns the display name, bio (≤116 chars), and 3 products, each with a type, format, title, description, ₹ price, price rationale and button text.
 4. **Price guardrails:** Storefront AI proposes prices, then code keeps them inside a range set by **category → product type → audience size**, scaled by session length, and rounds to Indian charm pricing (₹99, ₹499, ₹1,299 …). The editor shows "Creators like you usually charge ₹X–Y". See [Pricing](#pricing).
-5. **Edit everything:** the brand step (photo, name, bio with ✨ Rewrite, theme), the products step (edit any field, ✨ Try a different idea per product, ✨ Suggest another idea, ↻ Regenerate whole store, add a product by type and let ✨ Write with AI fill it in), and a payments step (UPI, demo only).
-6. **Launch:** creates a public page at `/s/<handle>` and a private edit link `/edit/<handle>?k=<key>` that shows store views and buy clicks.
+5. **Edit everything, with a Mobile/Desktop live preview:** the brand step (photo, name, bio with ✨ Rewrite, theme), the products step (edit any field, ✨ Try a different idea, ✨ Suggest another idea, ↻ Regenerate whole store, or add a product by type; new products start as unpriced drafts, and ✨ Write with Storefront AI polishes the creator's title and description and suggests a price without overwriting theirs), and a payments step (UPI, demo only, with a KYC note). Sessions can be 1:1, group classes or webinars.
+6. **Launch:** after a content confirmation, creates a public page at `/s/<handle>` and a private edit link `/edit/<handle>?k=<key>` with store views, buy clicks, a KYC-locked Settlements tab, a Pro waitlist and a Help panel.
 
 ## Pricing
 
@@ -67,7 +67,7 @@ Key metric: **Pro intent rate = joins ÷ Pro tab views**, by category and audien
 
 | Case | Behaviour |
 |---|---|
-| Handle doesn't exist, is private, or Instagram blocks the read | Friendly message; the description becomes required |
+| Handle doesn't exist, is private, or Instagram blocks the read | The handle is shown as an unverified link with a one-tap "check it opens your profile" link; the description becomes required |
 | Malformed handle or full URL pasted | URL is parsed; invalid characters are flagged inline |
 | Gibberish or one-word description | The model flags `too_vague` and asks one clarifying question; the creator can answer it or choose "Generate anyway" |
 | LLM busy, slow, rate-limited or misconfigured | Falls through a chain of Gemini models (18-second timeout each, about 50 seconds in total); a rate limit gets its own "try again in a minute" message. The error screen keeps the inputs and offers "Try again"; after 2 failures it also offers an editable starter template, clearly labelled |
