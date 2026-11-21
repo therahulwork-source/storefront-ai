@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { genProduct, resizeImage } from "@/lib/client";
 import { bandFor, tierFor } from "@/lib/pricing";
-import { MAX_SHIP_DAYS, PRODUCT_TYPES, type CreatorProfile, type Product } from "@/lib/types";
+import { MAX_SHIP_DAYS, PRODUCT_TYPES, isDraft, type CreatorProfile, type Product } from "@/lib/types";
 import { Button, Field, Notice, formatINR, inputCls } from "./ui";
 
 const MAX_IMAGES: Record<Product["type"], number> = { digital: 1, session: 1, locked: 1, affiliate: 1, physical: 6 };
@@ -30,7 +30,9 @@ export function ProductEditor({
   const typeInfo = PRODUCT_TYPES.find((t) => t.type === p.type);
   const typeLabel = typeInfo?.label ?? p.type;
 
-  async function regenerate(useTitleAsHint: boolean) {
+  // "Write with Storefront AI": polish the creator's own title and description; keep a price they set.
+  // "Try a different idea": replace an AI-made product with a fresh idea.
+  async function regenerate(polishCreatorText: boolean) {
     setBusy(true);
     setErr(null);
     try {
@@ -38,10 +40,30 @@ export function ProductEditor({
         avoid: others,
         type: p.type,
         sessionKind: p.sessionKind,
-        titleHint: useTitleAsHint ? p.title : undefined,
+        titleHint: polishCreatorText ? p.title : undefined,
+        descriptionHint: polishCreatorText && p.description.trim() ? p.description : undefined,
       });
-      // keep the creator's own uploads and links
-      onChange({ ...next, id: p.id, images: p.images, fileName: p.fileName, affiliateUrl: p.affiliateUrl, meetLink: p.meetLink, schedule: p.schedule });
+      const creatorPrice = polishCreatorText ? p.price : null;
+      const keep = {
+        id: p.id,
+        images: p.images,
+        fileName: p.fileName,
+        affiliateUrl: p.affiliateUrl,
+        meetLink: p.meetLink,
+        schedule: p.schedule,
+        deliveryCharge: p.deliveryCharge,
+        shipsWithin: p.shipsWithin,
+        shipsCustomDays: p.shipsCustomDays,
+        returns: p.returns,
+      };
+      onChange({
+        ...next,
+        ...keep,
+        price: creatorPrice ?? next.price,
+        suggestedPrice: creatorPrice !== null && creatorPrice !== next.price ? (next.price ?? undefined) : undefined,
+        compareAtPrice: polishCreatorText ? p.compareAtPrice : next.compareAtPrice,
+        aiGenerated: polishCreatorText ? p.aiGenerated : true,
+      });
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -62,7 +84,10 @@ export function ProductEditor({
   }
 
   const isNew = !p.title && !p.description;
-  const showRange = p.type !== "affiliate" && p.type !== "physical";
+  // No price signals until Storefront AI has looked at the product.
+  const aiPriced = p.aiGenerated || Boolean(p.priceRationale);
+  const showRange = aiPriced && p.type !== "affiliate" && p.type !== "physical";
+  const draft = isDraft(p);
   const [bandLo, bandHi] = bandFor({
     category: profile.category,
     type: p.type,
@@ -81,14 +106,20 @@ export function ProductEditor({
           </p>
           <p className="truncate font-semibold text-neutral-900">{p.title || "New product"}</p>
         </div>
-        <span className="text-sm font-semibold text-neutral-900">{formatINR(p.price)}</span>
+        {draft ? (
+          <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-600">Draft</span>
+        ) : (
+          <span className="text-sm font-semibold text-neutral-900">{p.price === 0 ? "Free" : formatINR(p.price ?? 0)}</span>
+        )}
         <span className="text-neutral-400">{open ? "▴" : "▾"}</span>
       </button>
 
       {open && (
         <div className="space-y-4 border-t border-neutral-100 p-4">
           {isNew && (
-            <Notice tone="info">Describe your idea in the title box, for example &quot;Weekend baking class&quot;, then tap <b>Write with Storefront AI</b>. It writes the description and suggests a price.</Notice>
+            <Notice tone="info">
+              Add a title, for example &quot;Weekend baking class&quot;, and a description if you like. Then tap <b>Write with Storefront AI</b> to polish the wording and suggest a price.
+            </Notice>
           )}
           <Field label="Title">
             <input className={inputCls} value={p.title} maxLength={80} placeholder="e.g. 7-day home workout plan" onChange={(e) => set({ title: e.target.value })} />
@@ -101,7 +132,15 @@ export function ProductEditor({
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Price (₹)">
-              <input className={inputCls} type="number" inputMode="numeric" min={0} value={p.price} onChange={(e) => set({ price: Math.max(0, Math.round(Number(e.target.value) || 0)) })} />
+              <input
+                className={inputCls}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                placeholder="Set a price"
+                value={p.price ?? ""}
+                onChange={(e) => set({ price: e.target.value === "" ? null : Math.max(0, Math.round(Number(e.target.value) || 0)) })}
+              />
             </Field>
             <Field label="Original price (₹)" hint="Optional, shows a discount">
               <input
@@ -115,22 +154,32 @@ export function ProductEditor({
               />
             </Field>
           </div>
-          {(p.priceRationale || showRange) && (
+          {aiPriced && (p.priceRationale || showRange) && (
             <div className="space-y-1 rounded-xl bg-violet-50 px-3 py-2 text-xs text-violet-900">
-              {p.priceRationale && (
+              {p.priceRationale && p.suggestedPrice !== undefined && p.suggestedPrice !== p.price ? (
                 <p>
-                  💡 <b>Why {formatINR(p.price)}?</b> {p.priceRationale}
+                  💡 <b>Storefront AI suggests {formatINR(p.suggestedPrice)}.</b> {p.priceRationale}{" "}
+                  <button type="button" className="font-semibold underline" onClick={() => set({ price: p.suggestedPrice!, suggestedPrice: undefined })}>
+                    Use {formatINR(p.suggestedPrice)}
+                  </button>
                 </p>
+              ) : (
+                p.priceRationale &&
+                p.price !== null && (
+                  <p>
+                    💡 <b>Why {formatINR(p.price)}?</b> {p.priceRationale}
+                  </p>
+                )
               )}
               {showRange && (
                 <p>
                   📊 Creators like you usually charge <b>{formatINR(bandLo)}–{formatINR(bandHi)}</b> for this.
-                  {(p.price < bandLo || p.price > bandHi) && p.price > 0 && <span className="text-amber-700"> Your price is outside this range, which is fine if you have a reason.</span>}
+                  {p.price !== null && (p.price < bandLo || p.price > bandHi) && p.price > 0 && <span className="text-amber-700"> Your price is outside this range, which is fine if you have a reason.</span>}
                 </p>
               )}
             </div>
           )}
-          {p.compareAtPrice !== null && p.compareAtPrice <= p.price && p.compareAtPrice > 0 && (
+          {p.compareAtPrice !== null && p.price !== null && p.compareAtPrice <= p.price && p.compareAtPrice > 0 && (
             <p className="text-xs text-amber-700">The original price should be higher than the price to show a discount.</p>
           )}
           <Field label="Button text">
@@ -258,8 +307,8 @@ export function ProductEditor({
 
           {err && <Notice tone="error">{err}</Notice>}
           <div className="flex flex-wrap gap-2 pt-1">
-            {isNew || !p.aiGenerated ? (
-              <Button variant="ai" loading={busy} onClick={() => regenerate(Boolean(p.title))} type="button">
+            {!p.aiGenerated ? (
+              <Button variant="ai" loading={busy} onClick={() => regenerate(true)} type="button" disabled={!p.title.trim()} title={!p.title.trim() ? "Add a title first" : undefined}>
                 ✨ Write with Storefront AI
               </Button>
             ) : (
@@ -271,6 +320,7 @@ export function ProductEditor({
               Delete
             </Button>
           </div>
+          {!p.aiGenerated && !p.title.trim() && <p className="text-xs text-neutral-500">Add a title first to use Storefront AI.</p>}
         </div>
       )}
     </div>

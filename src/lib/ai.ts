@@ -214,13 +214,15 @@ export async function generateBio(profile: CreatorProfile, current: string) {
 
 export async function generateProduct(
   profile: CreatorProfile,
-  opts: { avoid: string[]; type?: ProductType; titleHint?: string; sessionKind?: "one_on_one" | "group" },
+  opts: { avoid: string[]; type?: ProductType; titleHint?: string; descriptionHint?: string; sessionKind?: "one_on_one" | "group" },
 ) {
   const { text, tier } = creatorContext(profile);
   const ask = [
     "Create ONE product for this creator's store.",
     opts.type ? `It must be of type "${opts.type}"${opts.sessionKind ? ` with session_kind "${opts.sessionKind}"` : ""}.` : "",
-    opts.titleHint ? `The creator described it as: "${opts.titleHint}". Keep their idea; improve the wording, write the description and suggest a price.` : "",
+    opts.titleHint
+      ? `The creator wrote this title: "${opts.titleHint}"${opts.descriptionHint ? ` and this description: "${opts.descriptionHint}"` : ""}. Keep their idea and every fact they gave. Improve the title's wording (keep it close to theirs), ${opts.descriptionHint ? "polish their description" : "write the description"} without inventing claims, and suggest a price.`
+      : "",
     opts.avoid.length ? `It must be clearly different from the products already in the store: ${opts.avoid.map((t) => `"${t}"`).join(", ")}.` : "",
   ].filter(Boolean).join("\n");
   const out = await callModel(z.object({ product: ProductSchema }), `${text}\n\n${ask}`, 1500);

@@ -10,7 +10,9 @@ export function validateStore(s: unknown): { ok: true; store: Store } | { ok: fa
   if (st.contentConfirmed !== true) return { ok: false, error: "Please confirm your products contain no adult, explicit or illegal content." };
   if (st.products.length > 12) return { ok: false, error: "Up to 12 products for now." };
   for (const p of st.products) {
-    if (!p.title?.trim()) return { ok: false, error: "Every product needs a title." };
+    if (!p.title?.trim() || p.price === null || p.price === undefined) {
+      return { ok: false, error: `Add a title and price to "${p.title?.trim() || "New product"}", or delete it.` };
+    }
     if (!Number.isFinite(p.price) || p.price < 0 || p.price > 500000) return { ok: false, error: `Check the price for "${p.title}".` };
   }
   if (JSON.stringify(st).length > MAX_BYTES) return { ok: false, error: "Your images are too large. Remove a few photos and try again." };

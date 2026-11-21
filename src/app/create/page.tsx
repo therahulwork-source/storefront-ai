@@ -178,14 +178,17 @@ export default function CreatePage() {
         onRegenerateAll={() => {
           if (confirm("Regenerate your bio and all products? Your edits will be replaced.")) generate(true);
         }}
-        topBar={
-          <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-3 sm:px-8">
+        topBar={(previewButton) => (
+          <div className="flex items-center justify-between gap-3 border-b border-neutral-200 bg-white px-4 py-3 sm:px-8">
             <span className="font-bold">Storefront AI</span>
-            <button className="text-sm text-neutral-500 hover:text-neutral-900" onClick={startOver}>
-              Start over
-            </button>
+            <div className="flex items-center gap-3">
+              {previewButton}
+              <button className="text-sm text-neutral-500 hover:text-neutral-900" onClick={startOver}>
+                Start over
+              </button>
+            </div>
           </div>
-        }
+        )}
         primaryAction={
           <div className="flex flex-col items-end gap-2">
             {launchErr && <span className="text-sm text-red-600">{launchErr}</span>}

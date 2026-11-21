@@ -26,7 +26,7 @@ export const genBio = (profile: CreatorProfile, current: string) =>
   api<{ bio: string }>("/api/generate", { kind: "bio", profile, current }).then((r) => r.bio);
 export const genProduct = (
   profile: CreatorProfile,
-  opts: { avoid: string[]; type?: ProductType; titleHint?: string; sessionKind?: string },
+  opts: { avoid: string[]; type?: ProductType; titleHint?: string; descriptionHint?: string; sessionKind?: string },
 ) => api<{ product: Product }>("/api/generate", { kind: "product", profile, ...opts }).then((r) => r.product);
 
 /** Resize an image file to a compact JPEG data URL so stores stay small. */

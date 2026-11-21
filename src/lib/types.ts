@@ -21,9 +21,10 @@ export type Product = {
   format: string; // e.g. "PDF e-book", "30-min 1:1 call"
   title: string;
   description: string;
-  price: number; // INR
+  price: number | null; // INR; null = not set yet (0 = free)
   compareAtPrice: number | null; // optional "original" price for a discount
   priceRationale: string;
+  suggestedPrice?: number; // Storefront AI's price when the creator kept their own
   ctaLabel: string;
   images: string[]; // data URLs (resized on the client)
   // type-specific details
@@ -42,6 +43,9 @@ export type Product = {
 };
 
 export const MAX_SHIP_DAYS = 30;
+
+/** A product isn't ready to sell until it has a title and a price. */
+export const isDraft = (p: Product) => !p.title.trim() || p.price === null;
 
 export function shippingSummary(p: Product): string | null {
   if (p.type !== "physical") return null;

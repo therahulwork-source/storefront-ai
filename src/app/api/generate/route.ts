@@ -24,6 +24,7 @@ export async function POST(req: Request) {
             avoid: Array.isArray(body.avoid) ? body.avoid.map(String).slice(0, 10) : [],
             type: body.type,
             titleHint: body.titleHint ? String(body.titleHint).slice(0, 200) : undefined,
+            descriptionHint: body.descriptionHint ? String(body.descriptionHint).slice(0, 600) : undefined,
             sessionKind: body.sessionKind,
           }),
         });

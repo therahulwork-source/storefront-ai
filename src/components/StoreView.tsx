@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { THEMES, shippingSummary, type Product, type Store } from "@/lib/types";
+import { THEMES, isDraft, shippingSummary, type Product, type Store } from "@/lib/types";
 import { formatINR } from "./ui";
 
 const TYPE_EMOJI: Record<Product["type"], string> = { digital: "📘", session: "📅", locked: "🔒", affiliate: "🤝", physical: "📦" };
@@ -50,9 +50,18 @@ export function StoreView({ store, live = false }: { store: Store; live?: boolea
         </header>
 
         <main className="mt-8 space-y-4">
-          {store.products.map((p) => (
-            <ProductCard key={p.id} p={p} theme={t} onBuy={() => onBuy(p)} />
-          ))}
+          {store.products.map((p) =>
+            isDraft(p) ? (
+              // Unfinished products: never shown to buyers, a faint placeholder in the editor preview.
+              live ? null : (
+                <div key={p.id} className="rounded-2xl border-2 border-dashed p-4 text-center text-sm" style={{ borderColor: t.sub, color: t.sub }}>
+                  {p.title.trim() ? `${p.title}: add a price` : "New product: add a title and price"}
+                </div>
+              )
+            ) : (
+              <ProductCard key={p.id} p={p} theme={t} onBuy={() => onBuy(p)} />
+            ),
+          )}
           {store.products.length === 0 && <p className="text-center text-sm" style={{ color: t.sub }}>Products will appear here.</p>}
         </main>
 
@@ -66,7 +75,7 @@ export function StoreView({ store, live = false }: { store: Store; live?: boolea
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-neutral-900" onClick={(e) => e.stopPropagation()}>
             <p className="text-sm text-neutral-500">{checkout.format}</p>
             <h3 className="mt-1 text-lg font-bold">{checkout.title}</h3>
-            <p className="mt-3 text-2xl font-bold">{formatINR(checkout.price)}</p>
+            <p className="mt-3 text-2xl font-bold">{checkout.price ? formatINR(checkout.price) : "Free"}</p>
             <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
               This is a demo store, so checkout isn&apos;t live yet. In the real product, buyers pay here by UPI or card.
             </p>
@@ -82,7 +91,8 @@ export function StoreView({ store, live = false }: { store: Store; live?: boolea
 
 function ProductCard({ p, theme, onBuy }: { p: Product; theme: (typeof THEMES)[keyof typeof THEMES]; onBuy: () => void }) {
   const [open, setOpen] = useState(false);
-  const off = p.compareAtPrice && p.compareAtPrice > p.price ? Math.round((1 - p.price / p.compareAtPrice) * 100) : 0;
+  const price = p.price ?? 0;
+  const off = p.compareAtPrice && p.compareAtPrice > price ? Math.round((1 - price / p.compareAtPrice) * 100) : 0;
   const img = p.images[0];
   return (
     <article className="overflow-hidden rounded-2xl backdrop-blur" style={{ background: theme.card }}>
@@ -113,7 +123,7 @@ function ProductCard({ p, theme, onBuy }: { p: Product; theme: (typeof THEMES)[k
         {shippingSummary(p) && <p className="mt-2 text-xs" style={{ color: theme.sub }}>{shippingSummary(p)}</p>}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold">{p.price > 0 ? formatINR(p.price) : "Free"}</span>
+            <span className="text-lg font-bold">{price > 0 ? formatINR(price) : "Free"}</span>
             {off > 0 && (
               <>
                 <span className="text-sm line-through" style={{ color: theme.sub }}>{formatINR(p.compareAtPrice!)}</span>

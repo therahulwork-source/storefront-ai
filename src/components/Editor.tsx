@@ -18,7 +18,7 @@ function blankProduct(type: ProductType): Product {
     format: { digital: "PDF / digital file", session: "Video call", locked: "Locked post", affiliate: "Recommended product", physical: "Physical product" }[type],
     title: "",
     description: "",
-    price: { digital: 199, session: 499, locked: 49, affiliate: 499, physical: 499 }[type],
+    price: null, // no price until the creator sets one or asks Storefront AI
     compareAtPrice: null,
     priceRationale: "",
     ctaLabel: { digital: "Get it", session: "Book a call", locked: "Unlock", affiliate: "Shop now", physical: "Buy now" }[type],
@@ -47,7 +47,7 @@ export function Editor({
   mode: "setup" | "live";
   section: Section;
   setSection: (s: Section) => void;
-  topBar?: ReactNode;
+  topBar?: (previewButton: ReactNode) => ReactNode; // previewButton shows only on phones
   primaryAction: ReactNode;
   onRegenerateAll?: () => void;
   pro?: { slug: string; editKey: string };
@@ -131,7 +131,11 @@ export function Editor({
   return (
     <div className="flex min-h-dvh flex-col bg-neutral-100 lg:flex-row">
       <div className="flex-1 lg:max-w-2xl lg:overflow-y-auto lg:border-r lg:border-neutral-200 lg:h-dvh">
-        {topBar}
+        {topBar?.(
+          <button onClick={() => setPreview(true)} className="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white lg:hidden">
+            👁 Preview
+          </button>,
+        )}
         <div className="px-4 py-6 sm:px-8">
           {mode === "live" ? (
             <nav className="mb-6 flex gap-1 overflow-x-auto rounded-full bg-white p-1 shadow-sm">
@@ -484,10 +488,7 @@ export function Editor({
         />
       )}
 
-      {/* Mobile: preview toggle */}
-      <button onClick={() => setPreview(true)} className="fixed bottom-20 right-4 z-40 rounded-full bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-lg lg:hidden">
-        👁 Preview
-      </button>
+      {/* Mobile: full-screen preview (opened from the top bar) */}
       {preview && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black lg:hidden">
           <button onClick={() => setPreview(false)} className="fixed right-4 top-4 z-50 rounded-full bg-white px-4 py-2 text-sm font-semibold shadow">
