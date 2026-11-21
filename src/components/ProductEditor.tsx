@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { genProduct, resizeImage } from "@/lib/client";
+import { bandFor, tierFor } from "@/lib/pricing";
 import { PRODUCT_TYPES, type CreatorProfile, type Product } from "@/lib/types";
 import { Button, Field, Notice, formatINR, inputCls } from "./ui";
 
@@ -60,6 +61,14 @@ export function ProductEditor({
   }
 
   const isNew = !p.title && !p.description;
+  const showRange = p.type !== "affiliate" && p.type !== "physical";
+  const [bandLo, bandHi] = bandFor({
+    category: profile.category,
+    type: p.type,
+    tier: tierFor(profile),
+    sessionKind: p.sessionKind,
+    durationMinutes: p.durationMinutes,
+  });
 
   return (
     <div className="rounded-2xl border border-neutral-200 bg-white">
@@ -104,10 +113,20 @@ export function ProductEditor({
               />
             </Field>
           </div>
-          {p.priceRationale && (
-            <p className="rounded-xl bg-violet-50 px-3 py-2 text-xs text-violet-900">
-              💡 <b>Why {formatINR(p.price)}?</b> {p.priceRationale}
-            </p>
+          {(p.priceRationale || showRange) && (
+            <div className="space-y-1 rounded-xl bg-violet-50 px-3 py-2 text-xs text-violet-900">
+              {p.priceRationale && (
+                <p>
+                  💡 <b>Why {formatINR(p.price)}?</b> {p.priceRationale}
+                </p>
+              )}
+              {showRange && (
+                <p>
+                  📊 Creators like you usually charge <b>{formatINR(bandLo)}–{formatINR(bandHi)}</b> for this.
+                  {(p.price < bandLo || p.price > bandHi) && p.price > 0 && <span className="text-amber-700"> Your price is outside this range, which is fine if you have a reason.</span>}
+                </p>
+              )}
+            </div>
           )}
           {p.compareAtPrice !== null && p.compareAtPrice <= p.price && p.compareAtPrice > 0 && (
             <p className="text-xs text-amber-700">The original price should be higher than the price to show a discount.</p>

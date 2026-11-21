@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { api, DRAFT_KEY, genStore, MINE_KEY, storage, type Draft, type MyStore, type StoreGen } from "@/lib/client";
 import { normaliseHandle } from "@/lib/instagram";
 import { starterProducts } from "@/lib/templates";
-import { CATEGORIES, type CreatorProfile, type IgSignals, type Store } from "@/lib/types";
+import { AUDIENCE_OPTIONS, CATEGORIES, type CreatorProfile, type IgSignals, type Store } from "@/lib/types";
 import { Editor, type Section } from "@/components/Editor";
 import { Button, Field, Notice, Spinner, StepFooter, inputCls } from "@/components/ui";
 
@@ -15,7 +15,7 @@ const CAT_EMOJI: Record<string, string> = {
   "Entertainment & Media": "🍿", "Food & Cooking": "🍳", Other: "✨",
 };
 
-const emptyProfile: CreatorProfile = { name: "", category: "", handles: [""], about: "", language: "english", igSignals: null };
+const emptyProfile: CreatorProfile = { name: "", category: "", handles: [""], about: "", language: "english", igSignals: null, followerRange: null };
 
 type IgState = { status: "idle" | "checking" | "found" | "failed"; reason?: string };
 type Stage = "wizard" | "generating" | "vague" | "error" | "editor";
@@ -340,7 +340,7 @@ export default function CreatePage() {
                   {profile.igSignals.bio && <span className="mt-1 block text-emerald-800">&quot;{profile.igSignals.bio}&quot;</span>}
                 </Notice>
               )}
-              {ig.status === "failed" && handles.length > 0 && (
+              {(ig.status === "failed" || ig.status === "idle") && handles.length > 0 && (
                 <div>
                   <div className="flex flex-wrap gap-2">
                     {handles.map((h) => {
@@ -359,6 +359,23 @@ export default function CreatePage() {
                 </div>
               )}
             </div>
+            {!(ig.status === "found" && profile.igSignals?.followers != null) && (
+              <div className="mt-5">
+                <p className="mb-1.5 text-sm font-medium text-neutral-800">Your followers (optional)</p>
+                <div className="flex flex-wrap gap-2">
+                  {AUDIENCE_OPTIONS.map((o) => (
+                    <button
+                      key={o.tier}
+                      onClick={() => p({ followerRange: profile.followerRange === o.tier ? null : o.tier })}
+                      className={`rounded-xl border px-4 py-2 text-sm ${profile.followerRange === o.tier ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500" : "border-neutral-200"}`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">Helps Storefront AI price for your audience. If you skip it, we price for under 10K followers.</p>
+              </div>
+            )}
             <div className="mt-6 space-y-5">
               <Field
                 label={aboutNeeded ? "Describe what you do in a line or two" : "Anything to add? (optional)"}

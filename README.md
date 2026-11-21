@@ -9,9 +9,43 @@ Built for the SuperProfile Product Manager assignment ("AI Storefront Generator"
 1. **Onboarding (3 steps):** name → content category + Instagram handle(s) → "tell us about you" + language (English / Hinglish).
 2. **Instagram read (best effort):** tries to read the public profile (name, bio, followers, recent captions). Instagram often blocks automated reads. When it does, the creator is told plainly and asked for a line about themselves instead.
 3. **AI drafts the store:** one Gemini call returns the display name, bio (≤116 chars), and 3 products, each with a type, format, title, description, ₹ price, price rationale and button text.
-4. **Price guardrails:** the AI proposes prices, then code clamps them to bands by product type and audience size (nano <10K, micro 10–50K, mid 50K+) and applies Indian charm pricing (₹99, ₹149, ₹499 …). If a price was adjusted, the rationale says so.
+4. **Price guardrails:** Storefront AI proposes prices, then code keeps them inside a range set by **category → product type → audience size**, scaled by session length, and rounds to Indian charm pricing (₹99, ₹499, ₹1,299 …). The editor shows "Creators like you usually charge ₹X–Y". See [Pricing](#pricing).
 5. **Edit everything:** the brand step (photo, name, bio with ✨ Rewrite, theme), the products step (edit any field, ✨ Try a different idea per product, ✨ Suggest another idea, ↻ Regenerate whole store, add a product by type and let ✨ Write with AI fill it in), and a payments step (UPI, demo only).
 6. **Launch:** creates a public page at `/s/<handle>` and a private edit link `/edit/<handle>?k=<key>` that shows store views and buy clicks.
+
+## Pricing
+
+**Inputs:** category (step 2) → product type → audience size (optional "Your followers" in step 3; blank means under 10K). Session ranges below are for 30 minutes unless stated, and scale with length (60 min ≈ 1.7×).
+
+**Category groups**
+- **Expert advice:** Finance & Trading, Law & Legal, Medical, Astrology / Numerology, Education & Career, Technology & IT, Digital Marketing, Coaching
+- **Skills & lifestyle coaching:** Fitness & Nutrition, Design & Arts, Beauty & Personal Care, Food & Cooking
+- **Entertainment, travel & other:** Entertainment & Media, Travel / Hospitality, Other
+
+| Group | Product | Under 10K | 10K–50K | 50K+ |
+|---|---|---|---|---|
+| Expert advice | PDF / digital files | ₹99–499 | ₹149–799 | ₹199–1,499 |
+| | 1:1 session (30 min) | ₹499–1,499 | ₹749–2,399 | ₹999–4,499 |
+| | Group class (60 min, per seat) | ₹349–1,399 | ₹499–2,199 | ₹699–4,199 |
+| | Locked content | ₹49–199 | ₹99–299 | ₹99–599 |
+| Skills & lifestyle | PDF / digital files | ₹99–399 | ₹149–649 | ₹199–1,199 |
+| | 1:1 session (30 min) | ₹299–999 | ₹449–1,599 | ₹599–2,999 |
+| | Group class (60 min, per seat) | ₹249–999 | ₹399–1,699 | ₹499–3,099 |
+| | Locked content | ₹29–149 | ₹49–249 | ₹49–449 |
+| Entertainment, travel & other | PDF / digital files | ₹49–299 | ₹99–499 | ₹99–899 |
+| | 1:1 session (30 min) | ₹199–799 | ₹299–1,299 | ₹399–2,399 |
+| | Group class (60 min, per seat) | ₹149–849 | ₹249–1,399 | ₹349–2,599 |
+| | Locked content | ₹29–149 | ₹49–249 | ₹49–449 |
+
+Affiliate and physical products aren't constrained (₹99–9,999); the real item sets the price.
+
+**Market evidence used (India, public data, Nov 2026)**
+- 1:1 calls, Topmate medians for paid calls (Nov 2025–Oct 2026): career coaching ₹609 (middle half ₹310–1,200), mock interview ₹809, product management ₹709, data science ₹510, software engineering ₹498, resume review ₹509, study-abroad counselling ₹1,500.
+- Astrology: fixed sessions are typically ₹300–1,999. Online legal advice: about ₹500–1,000 for 30 minutes. Nutritionists: about ₹249–1,500 per consultation, and diet plans ₹499–999.
+- Digital products: e-book templates on Topmate at ₹49–199; travel itineraries at ₹81–99; low-ticket workshops at ₹99–499.
+- Locked or subscription content: Instagram subscriptions start at ₹89 a month; most creators charge ₹49–399.
+
+These ranges are a v1 assumption built from public listings. v2 should learn them from SuperProfile's own sales data and price experiments.
 
 ## Edge cases handled
 

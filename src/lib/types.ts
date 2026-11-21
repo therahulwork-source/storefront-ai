@@ -38,6 +38,14 @@ export type Product = {
 
 export type Language = "english" | "hinglish";
 
+export type AudienceTier = "nano" | "micro" | "mid"; // <10K, 10K–50K, 50K+
+
+export const AUDIENCE_OPTIONS: { tier: AudienceTier; label: string }[] = [
+  { tier: "nano", label: "Under 10K" },
+  { tier: "micro", label: "10K–50K" },
+  { tier: "mid", label: "50K+" },
+];
+
 export type CreatorProfile = {
   name: string;
   category: string;
@@ -45,6 +53,7 @@ export type CreatorProfile = {
   about: string; // creator's own one-line description
   language: Language;
   igSignals: IgSignals | null;
+  followerRange?: AudienceTier | null; // self-reported; optional
 };
 
 export type IgSignals = {

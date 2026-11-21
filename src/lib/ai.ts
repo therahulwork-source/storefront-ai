@@ -69,7 +69,7 @@ Principles:
 
 function creatorContext(p: CreatorProfile) {
   const ig = p.igSignals;
-  const tier = tierFor(ig?.followers ?? null);
+  const tier = tierFor(p);
   const lines = [
     `Creator name: ${p.name || "(not given)"}`,
     `Content category they picked: ${p.category}`,
@@ -82,9 +82,13 @@ function creatorContext(p: CreatorProfile) {
     if (ig.bio) lines.push(`Instagram bio: "${ig.bio}"`);
     if (ig.captions.length) lines.push(`Recent captions:\n${ig.captions.map((c) => `- ${c.replace(/\s+/g, " ")}`).join("\n")}`);
   } else {
-    lines.push("Instagram data: not available (treat audience as small, under 10K).");
+    lines.push("Instagram data: not available.");
   }
-  lines.push(`Typical price bands for this audience size: ${bandsForPrompt(tier)}.`);
+  const audience = { nano: "under 10K followers", micro: "10K–50K followers", mid: "50K+ followers" }[tier];
+  lines.push(
+    `Audience size: ${audience}${p.igSignals?.followers != null ? " (from Instagram)" : p.followerRange ? " (self-reported)" : " (not given, assume small)"}.`,
+  );
+  lines.push(`Typical Indian price bands for this category and audience size: ${bandsForPrompt(p.category, tier)}. Price inside these bands.`);
   lines.push(
     p.language === "hinglish"
       ? "LANGUAGE: Write the bio, titles, descriptions, price_rationale and cta_label in Roman-script Hinglish (Hindi + English mix, like Instagram captions). Not pure English. Avoid gendered Hindi verb forms about the creator (e.g. write \"main help karta/karti hoon\" as \"main help karti hoon\" only if the creator's gender is stated; otherwise rephrase)."
@@ -153,10 +157,11 @@ async function callModel<T extends z.ZodType>(schema: T, user: string, maxTokens
   }
 }
 
-function toProduct(a: AiProduct, tier: ReturnType<typeof tierFor>): Product {
+function toProduct(a: AiProduct, tier: ReturnType<typeof tierFor>, category: string): Product {
   const type = a.type as ProductType;
   const sessionKind = type === "session" ? (a.session_kind === "group" ? "group" : "one_on_one") : undefined;
-  const guarded = guardPrice(a.price_inr, type, tier, sessionKind);
+  const durationMinutes = type === "session" ? Math.max(15, Math.round(a.duration_minutes || 30)) : undefined;
+  const guarded = guardPrice(a.price_inr, { category, type, tier, sessionKind, durationMinutes });
   return {
     id: nanoid(8),
     type,
@@ -166,12 +171,12 @@ function toProduct(a: AiProduct, tier: ReturnType<typeof tierFor>): Product {
     price: guarded.price,
     compareAtPrice: null,
     priceRationale: guarded.adjusted
-      ? `Adjusted to ₹${guarded.price} to match what buyers usually pay creators with an audience your size.`
+      ? `Adjusted to ₹${guarded.price} to match what Indian buyers usually pay for this in your category and audience size.`
       : a.price_rationale.trim(),
     ctaLabel: a.cta_label.trim() || "Buy now",
     images: [],
     sessionKind,
-    durationMinutes: type === "session" ? Math.max(15, Math.round(a.duration_minutes || 30)) : undefined,
+    durationMinutes,
     aiGenerated: true,
   };
 }
@@ -193,7 +198,7 @@ Before that, judge input_quality: "too_vague" ONLY if there is no Instagram data
     niche: out.inferred_niche,
     displayName: out.display_name.trim() || profile.name,
     bio: clipBio(out.bio.trim()),
-    products: out.products.slice(0, 4).map((p) => toProduct(p, tier)),
+    products: out.products.slice(0, 4).map((p) => toProduct(p, tier, profile.category)),
   };
 }
 
@@ -219,5 +224,5 @@ export async function generateProduct(
     opts.avoid.length ? `It must be clearly different from the products already in the store: ${opts.avoid.map((t) => `"${t}"`).join(", ")}.` : "",
   ].filter(Boolean).join("\n");
   const out = await callModel(z.object({ product: ProductSchema }), `${text}\n\n${ask}`, 1500);
-  return toProduct(out.product, tier);
+  return toProduct(out.product, tier, profile.category);
 }
