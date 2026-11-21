@@ -189,21 +189,44 @@ export function ProductEditor({
           {p.type === "session" && (
             <div className="grid grid-cols-2 gap-3">
               <Field label="Session type">
-                <select className={inputCls} value={p.sessionKind ?? "one_on_one"} onChange={(e) => set({ sessionKind: e.target.value as Product["sessionKind"] })}>
+                <select
+                  className={inputCls}
+                  value={p.sessionKind ?? "one_on_one"}
+                  onChange={(e) => {
+                    const kind = e.target.value as NonNullable<Product["sessionKind"]>;
+                    const defaultCta = ["Book a call", "Join the class", "Register", ""].includes(p.ctaLabel);
+                    set({
+                      sessionKind: kind,
+                      // sensible defaults when switching, without overriding the creator's own choices
+                      ...(kind === "webinar" && (p.durationMinutes ?? 30) === 30 ? { durationMinutes: 60 } : {}),
+                      ...(defaultCta ? { ctaLabel: kind === "webinar" ? "Register" : kind === "group" ? "Join the class" : "Book a call" } : {}),
+                    });
+                  }}
+                >
                   <option value="one_on_one">1:1</option>
                   <option value="group">Group class</option>
+                  <option value="webinar">Webinar</option>
                 </select>
               </Field>
               <Field label="Duration (min)">
                 <input className={inputCls} type="number" min={10} value={p.durationMinutes ?? 30} onChange={(e) => set({ durationMinutes: Math.max(10, Number(e.target.value) || 30) })} />
               </Field>
               <div className="col-span-2">
-                <Field label="When are you available?" hint="Shown to buyers, e.g. Sat & Sun, 6–8 PM">
-                  <input className={inputCls} value={p.schedule ?? ""} maxLength={60} onChange={(e) => set({ schedule: e.target.value })} />
-                </Field>
+                {p.sessionKind === "webinar" ? (
+                  <Field label="Date and time" hint="Shown to buyers. Optional for now.">
+                    <input className={inputCls} type="datetime-local" value={p.startsAt ?? ""} onChange={(e) => set({ startsAt: e.target.value || undefined })} />
+                  </Field>
+                ) : (
+                  <Field label="When are you available?" hint="Shown to buyers, e.g. Sat & Sun, 6–8 PM">
+                    <input className={inputCls} value={p.schedule ?? ""} maxLength={60} onChange={(e) => set({ schedule: e.target.value })} />
+                  </Field>
+                )}
               </div>
               <div className="col-span-2">
-                <Field label="Google Meet link" hint="Private: sent to buyers after they book (not shown on your store)">
+                <Field
+                  label={p.sessionKind === "webinar" ? "Meeting link (Zoom, Google Meet or YouTube Live)" : "Google Meet link"}
+                  hint="Private: sent to buyers after they book (not shown on your store)"
+                >
                   <input className={inputCls} value={p.meetLink ?? ""} placeholder="https://meet.google.com/..." onChange={(e) => set({ meetLink: e.target.value })} />
                 </Field>
               </div>

@@ -13,7 +13,7 @@ import type { AudienceTier, CreatorProfile, ProductType } from "./types";
  */
 export type Tier = AudienceTier;
 export type CategoryGroup = "expert" | "skill" | "lifestyle";
-type PriceKey = "digital" | "session_one_on_one" | "session_group" | "locked";
+type PriceKey = "digital" | "session_one_on_one" | "session_group" | "session_webinar" | "locked";
 type Band = [number, number];
 
 const EXPERT = new Set([
@@ -36,9 +36,9 @@ export const GROUP_LABEL: Record<CategoryGroup, string> = {
 
 // Under-10K base bands (30-min sessions), in ₹
 export const BASE: Record<CategoryGroup, Record<PriceKey, Band>> = {
-  expert: { digital: [99, 499], session_one_on_one: [499, 1499], session_group: [199, 799], locked: [49, 199] },
-  skill: { digital: [99, 399], session_one_on_one: [299, 999], session_group: [149, 599], locked: [29, 149] },
-  lifestyle: { digital: [49, 299], session_one_on_one: [199, 799], session_group: [99, 499], locked: [29, 149] },
+  expert: { digital: [99, 499], session_one_on_one: [499, 1499], session_group: [199, 799], session_webinar: [99, 499], locked: [49, 199] },
+  skill: { digital: [99, 399], session_one_on_one: [299, 999], session_group: [149, 599], session_webinar: [99, 399], locked: [29, 149] },
+  lifestyle: { digital: [49, 299], session_one_on_one: [199, 799], session_group: [99, 499], session_webinar: [49, 299], locked: [29, 149] },
 };
 
 // Audience multipliers applied to [low, high]
@@ -82,10 +82,18 @@ export type PriceCtx = {
 
 export function bandFor({ category, type, tier, sessionKind, durationMinutes }: PriceCtx): Band {
   if (type === "affiliate" || type === "physical") return OPEN_BAND;
-  const key: PriceKey = type === "session" ? (sessionKind === "group" ? "session_group" : "session_one_on_one") : type;
+  const key: PriceKey =
+    type === "session"
+      ? sessionKind === "group"
+        ? "session_group"
+        : sessionKind === "webinar"
+          ? "session_webinar"
+          : "session_one_on_one"
+      : type;
   const [lo, hi] = BASE[categoryGroup(category)][key];
   const [ml, mh] = AUDIENCE_MULT[tier];
-  const d = type === "session" ? durationFactor(durationMinutes) : 1;
+  // Webinar seats are priced per event, not by length.
+  const d = type === "session" && sessionKind !== "webinar" ? durationFactor(durationMinutes) : 1;
   const low = charm(lo * ml * d);
   return [low, Math.max(low, charm(hi * mh * d))];
 }
@@ -99,6 +107,7 @@ export function bandsForPrompt(category: string, tier: Tier): string {
     `digital files: ${t("digital")}`,
     `30-min 1:1 session: ${t("session", "one_on_one")} (scale up for longer sessions)`,
     `group class / workshop (per seat): ${t("session", "group")}`,
+    `webinar (one-to-many, per seat; free is common as a lead magnet): ${t("session", "webinar")}`,
     `locked content: ${t("locked")}`,
   ].join("; ");
 }

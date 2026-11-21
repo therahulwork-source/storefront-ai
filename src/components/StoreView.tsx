@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { THEMES, isDraft, shippingSummary, type Product, type Store } from "@/lib/types";
+import { THEMES, formatStartsAt, isDraft, shippingSummary, type Product, type Store } from "@/lib/types";
 import { formatINR } from "./ui";
 
 const TYPE_EMOJI: Record<Product["type"], string> = { digital: "📘", session: "📅", locked: "🔒", affiliate: "🤝", physical: "📦" };
@@ -119,7 +119,9 @@ function ProductCard({ p, theme, onBuy }: { p: Product; theme: (typeof THEMES)[k
             {p.description}
           </p>
         )}
-        {p.type === "session" && p.schedule && <p className="mt-2 text-xs" style={{ color: theme.sub }}>🗓 {p.schedule}</p>}
+        {p.type === "session" && p.sessionKind === "webinar"
+          ? formatStartsAt(p.startsAt) && <p className="mt-2 text-xs" style={{ color: theme.sub }}>🗓 {formatStartsAt(p.startsAt)} · Live webinar</p>
+          : p.type === "session" && p.schedule && <p className="mt-2 text-xs" style={{ color: theme.sub }}>🗓 {p.schedule}</p>}
         {shippingSummary(p) && <p className="mt-2 text-xs" style={{ color: theme.sub }}>{shippingSummary(p)}</p>}
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="flex items-baseline gap-2">

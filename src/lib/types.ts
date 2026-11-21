@@ -1,8 +1,9 @@
 export type ProductType = "digital" | "session" | "locked" | "affiliate" | "physical";
+export type SessionKind = "one_on_one" | "group" | "webinar";
 
 export const PRODUCT_TYPES: { type: ProductType; label: string; hint: string; emoji: string; beta?: boolean }[] = [
   { type: "digital", label: "Digital files", hint: "E-books, PDFs, templates, presets, videos", emoji: "📁" },
-  { type: "session", label: "Online sessions", hint: "1:1 calls or group classes on Google Meet", emoji: "📅" },
+  { type: "session", label: "Online sessions", hint: "1:1 calls, group classes or webinars on Google Meet or Zoom", emoji: "📅" },
   { type: "locked", label: "Locked content", hint: "Fans pay to unlock a file or post", emoji: "🔒" },
   { type: "affiliate", label: "Affiliate products", hint: "Products you recommend, for a commission", emoji: "🤝" },
   { type: "physical", label: "Physical products", hint: "Merch or things you make. You ship them yourself.", emoji: "📦", beta: true },
@@ -28,7 +29,8 @@ export type Product = {
   ctaLabel: string;
   images: string[]; // data URLs (resized on the client)
   // type-specific details
-  sessionKind?: "one_on_one" | "group";
+  sessionKind?: SessionKind;
+  startsAt?: string; // webinars: local date-time "YYYY-MM-DDTHH:mm" (no time zone; shown as typed)
   durationMinutes?: number;
   schedule?: string;
   meetLink?: string;
@@ -43,6 +45,17 @@ export type Product = {
 };
 
 export const MAX_SHIP_DAYS = 30;
+
+/** "2026-12-06T19:00" → "Sat 6 Dec, 7:00 PM", computed without time zones so server and browser agree. */
+export function formatStartsAt(v?: string): string | null {
+  const m = v?.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(Date.UTC(y, mo - 1, d)).getUTCDay()];
+  const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][mo - 1];
+  const hour = h % 12 || 12;
+  return `${day} ${d} ${month}, ${hour}:${String(mi).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
 
 /** A product isn't ready to sell until it has a title and a price. */
 export const isDraft = (p: Product) => !p.title.trim() || p.price === null;

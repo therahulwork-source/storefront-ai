@@ -27,17 +27,20 @@ Built for the SuperProfile Product Manager assignment ("AI Storefront Generator"
 | Expert advice | PDF / digital files | ₹99–499 | ₹149–799 | ₹199–1,499 |
 | | 1:1 session (30 min) | ₹499–1,499 | ₹749–2,399 | ₹999–4,499 |
 | | Group class (60 min, per seat) | ₹349–1,399 | ₹499–2,199 | ₹699–4,199 |
+| | Webinar (per seat) | ₹99–499 | ₹149–799 | ₹199–1,499 |
 | | Locked content | ₹49–199 | ₹99–299 | ₹99–599 |
 | Skills & lifestyle | PDF / digital files | ₹99–399 | ₹149–649 | ₹199–1,199 |
 | | 1:1 session (30 min) | ₹299–999 | ₹449–1,599 | ₹599–2,999 |
 | | Group class (60 min, per seat) | ₹249–999 | ₹399–1,699 | ₹499–3,099 |
+| | Webinar (per seat) | ₹99–399 | ₹149–649 | ₹199–1,199 |
 | | Locked content | ₹29–149 | ₹49–249 | ₹49–449 |
 | Entertainment, travel & other | PDF / digital files | ₹49–299 | ₹99–499 | ₹99–899 |
 | | 1:1 session (30 min) | ₹199–799 | ₹299–1,299 | ₹399–2,399 |
 | | Group class (60 min, per seat) | ₹149–849 | ₹249–1,399 | ₹349–2,599 |
+| | Webinar (per seat) | ₹49–299 | ₹99–499 | ₹99–899 |
 | | Locked content | ₹29–149 | ₹49–249 | ₹49–449 |
 
-Affiliate and physical products aren't constrained (₹99–9,999); the real item sets the price.
+Webinars are one-to-many and priced per event, so their ranges don't scale with length; free (₹0) is allowed for lead-magnet webinars. Affiliate and physical products aren't constrained (₹99–9,999); the real item sets the price.
 
 **Market evidence used (India, public data, Nov 2026)**
 - 1:1 calls, Topmate medians for paid calls (Nov 2025–Oct 2026): career coaching ₹609 (middle half ₹310–1,200), mock interview ₹809, product management ₹709, data science ₹510, software engineering ₹498, resume review ₹509, study-abroad counselling ₹1,500.

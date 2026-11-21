@@ -32,7 +32,7 @@ export class AiError extends Error {
 
 const ProductSchema = z.object({
   type: z.enum(["digital", "session", "locked", "affiliate", "physical"]),
-  session_kind: z.enum(["one_on_one", "group", "none"]),
+  session_kind: z.enum(["one_on_one", "group", "webinar", "none"]),
   duration_minutes: z.number(),
   format: z.string(),
   title: z.string(),
@@ -63,7 +63,7 @@ Principles:
 - Descriptions: 2–3 short sentences, benefit first, what the buyer gets, no hype words like "ultimate", "revolutionary", no emojis spam (max one).
 - Bio: max ${BIO_MAX} characters, first person, says who they help and with what. No hashtags.
 - cta_label: 2–3 words, e.g. "Get the PDF", "Book a call", "Join the class".
-- session_kind is "none" and duration_minutes is 0 unless type is "session".
+- session_kind is "none" and duration_minutes is 0 unless type is "session". For sessions, session_kind is "one_on_one" (personal call), "group" (small interactive class or cohort) or "webinar" (one-off live talk for many people).
 - Never invent facts such as credentials, follower counts or results the creator didn't state.
 - Tone: if the language is "hinglish", write bio, titles and descriptions in natural Roman-script Hinglish the way Indian creators write captions (e.g. "Ghar pe banao restaurant-style biryani"). Otherwise use simple Indian English.`;
 
@@ -159,7 +159,8 @@ async function callModel<T extends z.ZodType>(schema: T, user: string, maxTokens
 
 function toProduct(a: AiProduct, tier: ReturnType<typeof tierFor>, category: string): Product {
   const type = a.type as ProductType;
-  const sessionKind = type === "session" ? (a.session_kind === "group" ? "group" : "one_on_one") : undefined;
+  const sessionKind =
+    type === "session" ? (a.session_kind === "group" || a.session_kind === "webinar" ? a.session_kind : "one_on_one") : undefined;
   const durationMinutes = type === "session" ? Math.max(15, Math.round(a.duration_minutes || 30)) : undefined;
   const guarded = guardPrice(a.price_inr, { category, type, tier, sessionKind, durationMinutes });
   return {
@@ -214,7 +215,7 @@ export async function generateBio(profile: CreatorProfile, current: string) {
 
 export async function generateProduct(
   profile: CreatorProfile,
-  opts: { avoid: string[]; type?: ProductType; titleHint?: string; descriptionHint?: string; sessionKind?: "one_on_one" | "group" },
+  opts: { avoid: string[]; type?: ProductType; titleHint?: string; descriptionHint?: string; sessionKind?: "one_on_one" | "group" | "webinar" },
 ) {
   const { text, tier } = creatorContext(profile);
   const ask = [
